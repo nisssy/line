@@ -8,7 +8,7 @@ import { Step2Sales } from "@/components/workflow/steps/step2-sales"
 import { Step2Office } from "@/components/workflow/steps/step2-office"
 import { Step3Sales } from "@/components/workflow/steps/step3-sales"
 import { Step3Office } from "@/components/workflow/steps/step3-office"
-import type { UserRole, WorkflowState, WorkflowStep, BasicInfo, SelectedAccount } from "@/types/workflow"
+import type { UserRole, WorkflowState, WorkflowStep, BasicInfo, SelectedAccount, ChatMessage, Supervisor } from "@/types/workflow"
 
 interface WorkflowContainerProps {
   role: UserRole
@@ -40,6 +40,8 @@ const initialState: WorkflowState = {
   policySkipped: false,
   step1Status: "pending",
   step2Status: "pending",
+  step1ChatHistory: [],
+  chatHistory: [],
   basicInfo: initialBasicInfo,
   intermediateReports: [
     { id: "1", title: "中間報告1" },
@@ -113,16 +115,66 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
   }
 
   const handleRejectStep1 = (reason: string) => {
+    const newMessage: ChatMessage = {
+      id: Math.random().toString(36).substr(2, 9),
+      sender: "office",
+      senderName: "事務局",
+      content: `【差し戻し】\n${reason}`,
+      timestamp: new Date().toLocaleString('ja-JP'),
+    }
     setState((prev) => ({
       ...prev,
       step1Status: "rejected",
       step1RejectionReason: reason,
+      step1ChatHistory: [...prev.step1ChatHistory, newMessage]
+    }))
+  }
+
+  const handleStep1SendMessage = (content: string, sender: "sales" | "office", escalatedTo?: Supervisor[]) => {
+    const newMessage: ChatMessage = {
+      id: Math.random().toString(36).substr(2, 9),
+      sender,
+      senderName: sender === "sales" ? "営業担当" : "事務局",
+      content,
+      timestamp: new Date().toLocaleString('ja-JP'),
+      escalatedTo,
+    }
+    setState((prev) => ({
+      ...prev,
+      step1ChatHistory: [...prev.step1ChatHistory, newMessage]
     }))
   }
 
   // Step 2 handlers
   const handleStep2Reply = (content: string) => {
-    setState((prev) => ({ ...prev, step2Status: "pending", step2SalesReply: content }))
+    const newMessage: ChatMessage = {
+      id: Math.random().toString(36).substr(2, 9),
+      sender: "sales",
+      senderName: "営業担当",
+      content,
+      timestamp: new Date().toLocaleString('ja-JP'),
+    }
+    setState((prev) => ({
+      ...prev,
+      step2Status: "pending",
+      step2SalesReply: content,
+      chatHistory: [...prev.chatHistory, newMessage]
+    }))
+  }
+
+  const handleSendMessage = (content: string, sender: "sales" | "office", escalatedTo?: Supervisor[]) => {
+    const newMessage: ChatMessage = {
+      id: Math.random().toString(36).substr(2, 9),
+      sender,
+      senderName: sender === "sales" ? "営業担当" : "事務局",
+      content,
+      timestamp: new Date().toLocaleString('ja-JP'),
+      escalatedTo,
+    }
+    setState((prev) => ({
+      ...prev,
+      chatHistory: [...prev.chatHistory, newMessage]
+    }))
   }
 
   const handleSendCustomerInquiry = (content: string) => {
@@ -146,10 +198,18 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
   }
 
   const handleRequestConfirmation = (content: string) => {
+    const newMessage: ChatMessage = {
+      id: Math.random().toString(36).substr(2, 9),
+      sender: "office",
+      senderName: "事務局",
+      content,
+      timestamp: new Date().toLocaleString('ja-JP'),
+    }
     setState((prev) => ({
       ...prev,
       step2Status: "failed",
       step2ConfirmationMessage: content,
+      chatHistory: [...prev.chatHistory, newMessage]
     }))
   }
 
@@ -264,12 +324,14 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
             basicInfo={state.basicInfo}
             policyDecided={state.policyDecided}
             policySkipped={state.policySkipped}
+            chatHistory={state.step1ChatHistory}
             onBasicInfoChange={handleBasicInfoChange}
             onSendApplication={handleSendApplication}
             onUploadApplication={handleUploadApplication}
             onRequestReview={handleRequestReview}
             onProceedWithDelivery={handleProceedWithDelivery}
             onSkipDelivery={handleSkipDelivery}
+            onSendMessage={(content, escalatedTo) => handleStep1SendMessage(content, "sales", escalatedTo)}
           />
         )}
 
@@ -277,8 +339,10 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
           <Step1Office
             status={state.step1Status}
             basicInfo={state.basicInfo}
+            chatHistory={state.step1ChatHistory}
             onApprove={handleApproveStep1}
             onReject={handleRejectStep1}
+            onSendMessage={(content, escalatedTo) => handleStep1SendMessage(content, "office", escalatedTo)}
           />
         )}
 
@@ -287,7 +351,9 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
           <Step2Sales
             status={state.step2Status}
             confirmationMessage={state.step2ConfirmationMessage}
+            chatHistory={state.chatHistory}
             onReply={handleStep2Reply}
+            onSendMessage={(content, escalatedTo) => handleSendMessage(content, "sales", escalatedTo)}
             onSendCustomerInquiry={handleSendCustomerInquiry}
           />
         )}
@@ -296,12 +362,14 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
           <Step2Office
             status={state.step2Status}
             salesReply={state.step2SalesReply}
+            chatHistory={state.chatHistory}
             selectedAccount={state.step2SelectedAccount}
             onMarkAsApplied={handleMarkAsApplied}
             onComplete={handleStep2Complete}
             onSelectAccount={handleStep2SelectAccount}
             onResetAccount={handleStep2ResetAccount}
             onRequestConfirmation={handleRequestConfirmation}
+            onSendMessage={(content, escalatedTo) => handleSendMessage(content, "office", escalatedTo)}
           />
         )}
 

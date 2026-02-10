@@ -5,7 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ConfirmModal } from "@/components/workflow/confirm-modal"
-import type { Step2Status, SelectedAccount } from "@/types/workflow"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Label } from "@/components/ui/label"
+import type { Step2Status, SelectedAccount, ChatMessage, Supervisor } from "@/types/workflow"
 import {
   User,
   CheckCircle,
@@ -16,8 +20,16 @@ import {
   ArrowLeft,
   Ban,
   RefreshCw,
+  Send,
+  AlertTriangle,
 } from "lucide-react"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+
+// 上司のサンプルデータ（本来はマスタから取得）
+const OFFICE_SUPERVISORS: Supervisor[] = [
+  { id: "sup-office-2-1", name: "事務 部長", role: "office" },
+  { id: "sup-office-2-2", name: "事務 課長", role: "office" },
+]
 
 // 既存アカウントサンプルデータ
 const initialAccounts = [
@@ -39,6 +51,7 @@ interface AccountItem {
 interface Step2OfficeProps {
   status: Step2Status
   salesReply?: string
+  chatHistory: ChatMessage[]
   selectedAccount?: SelectedAccount
   hasExistingAccounts?: boolean
   onMarkAsApplied: () => void
@@ -46,11 +59,13 @@ interface Step2OfficeProps {
   onSelectAccount: (account: SelectedAccount) => void
   onResetAccount: () => void
   onRequestConfirmation: (content: string) => void
+  onSendMessage: (content: string, escalatedTo?: Supervisor[]) => void
 }
 
 export function Step2Office({
   status,
   salesReply,
+  chatHistory,
   selectedAccount,
   hasExistingAccounts = true,
   onMarkAsApplied,
@@ -58,11 +73,31 @@ export function Step2Office({
   onSelectAccount,
   onResetAccount,
   onRequestConfirmation,
+  onSendMessage,
 }: Step2OfficeProps) {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [messageInput, setMessageInput] = useState("")
+  const [showChatInput, setShowChatInput] = useState(false)
   const [accounts, setAccounts] = useState<AccountItem[]>(
     hasExistingAccounts ? initialAccounts : []
   )
+  const [selectedSupervisors, setSelectedSupervisors] = useState<string[]>([])
+
+  const handleSendMessage = () => {
+    if (!messageInput.trim()) return
+
+    const escalatedTo = OFFICE_SUPERVISORS.filter(s => selectedSupervisors.includes(s.id))
+    onSendMessage(messageInput, escalatedTo.length > 0 ? escalatedTo : undefined)
+
+    setMessageInput("")
+    setSelectedSupervisors([])
+  }
+
+  const toggleSupervisor = (id: string) => {
+    setSelectedSupervisors(prev => 
+      prev.includes(id) ? prev.filter(p => p !== id) : [...prev, id]
+    )
+  }
   const [localView, setLocalView] = useState<LocalView>(
     hasExistingAccounts ? "account_list" : "new_creation"
   )
@@ -191,15 +226,116 @@ export function Step2Office({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {salesReply && (
-              <Alert className="border-info/30 bg-info/10">
-                <MessageCircle className="h-4 w-4 text-info" />
-                <AlertTitle className="text-info">営業からの回答</AlertTitle>
-                <AlertDescription className="text-foreground">
-                  {salesReply}
-                </AlertDescription>
-              </Alert>
+            {chatHistory.length > 0 && (
+              <div className="border rounded-lg p-4 bg-muted/30 mb-4">
+                <h4 className="text-sm font-medium mb-3">チャット履歴</h4>
+                <ScrollArea className="h-[200px] pr-4">
+                  <div className="space-y-4">
+                    {chatHistory.map((msg) => (
+                      <div key={msg.id} className={`flex flex-col ${msg.sender === 'office' ? 'items-end' : 'items-start'}`}>
+                        <div className={`max-w-[80%] rounded-lg p-3 ${msg.sender === 'office' ? 'bg-primary text-primary-foreground' : 'bg-background border'}`}>
+                          <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                        </div>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-muted-foreground">{msg.senderName}</span>
+                          <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                          {msg.escalatedTo && msg.escalatedTo.length > 0 && (
+                            <div className="flex items-center gap-1 text-xs text-destructive">
+                              <AlertTriangle className="h-3 w-3" />
+                              <span>{msg.escalatedTo.map(s => s.name).join(", ")}へエスカレーション</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+                <div className="mt-4 space-y-3">
+                  <Textarea
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    placeholder="メッセージを入力..."
+                    className="min-h-[80px]"
+                  />
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-xs text-muted-foreground">上司へエスカレーション</Label>
+                      <div className="flex flex-wrap gap-4">
+                        {OFFICE_SUPERVISORS.map(supervisor => (
+                          <div key={supervisor.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`sup-office-applied-${supervisor.id}`} 
+                              checked={selectedSupervisors.includes(supervisor.id)}
+                              onCheckedChange={() => toggleSupervisor(supervisor.id)}
+                            />
+                            <Label htmlFor={`sup-office-applied-${supervisor.id}`} className="text-sm font-normal cursor-pointer">
+                              {supervisor.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <Button onClick={handleSendMessage} className="self-end" size="icon">
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             )}
+
+            {/* チャット開始ボタン（履歴がない場合） */}
+            {chatHistory.length === 0 && !showChatInput && (
+              <div className="flex justify-end mb-4">
+                <Button variant="outline" size="sm" onClick={() => setShowChatInput(true)}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  営業担当へメッセージを送る
+                </Button>
+              </div>
+            )}
+
+            {/* チャット入力（履歴がない場合） */}
+            {chatHistory.length === 0 && showChatInput && (
+              <div className="border rounded-lg p-4 bg-muted/30 mb-4">
+                <h4 className="text-sm font-medium mb-3">営業担当へのメッセージ</h4>
+                <div className="space-y-3">
+                  <Textarea
+                    value={messageInput}
+                    onChange={(e) => setMessageInput(e.target.value)}
+                    placeholder="メッセージを入力..."
+                    className="min-h-[80px]"
+                  />
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-2">
+                      <Label className="text-xs text-muted-foreground">上司へエスカレーション</Label>
+                      <div className="flex flex-wrap gap-4">
+                        {OFFICE_SUPERVISORS.map(supervisor => (
+                          <div key={supervisor.id} className="flex items-center space-x-2">
+                            <Checkbox 
+                              id={`sup-office-applied-init-${supervisor.id}`} 
+                              checked={selectedSupervisors.includes(supervisor.id)}
+                              onCheckedChange={() => toggleSupervisor(supervisor.id)}
+                            />
+                            <Label htmlFor={`sup-office-applied-init-${supervisor.id}`} className="text-sm font-normal cursor-pointer">
+                              {supervisor.name}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="ghost" size="sm" onClick={() => setShowChatInput(false)} className="text-muted-foreground">
+                        キャンセル
+                      </Button>
+                      <Button onClick={handleSendMessage} size="icon">
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="rounded-lg bg-muted/50 p-4 text-center">
               <p className="text-sm text-muted-foreground">
                 LINE広告アカウントの申請が完了しました。登録状況を選択してください。
@@ -298,14 +434,114 @@ export function Step2Office({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {salesReply && (
-            <Alert className="border-info/30 bg-info/10">
-              <MessageCircle className="h-4 w-4 text-info" />
-              <AlertTitle className="text-info">営業からの回答</AlertTitle>
-              <AlertDescription className="text-foreground">
-                {salesReply}
-              </AlertDescription>
-            </Alert>
+          {chatHistory.length > 0 && (
+            <div className="border rounded-lg p-4 bg-muted/30 mb-4">
+              <h4 className="text-sm font-medium mb-3">チャット履歴</h4>
+              <ScrollArea className="h-[200px] pr-4">
+                <div className="space-y-4">
+                  {chatHistory.map((msg) => (
+                    <div key={msg.id} className={`flex flex-col ${msg.sender === 'office' ? 'items-end' : 'items-start'}`}>
+                      <div className={`max-w-[80%] rounded-lg p-3 ${msg.sender === 'office' ? 'bg-primary text-primary-foreground' : 'bg-background border'}`}>
+                        <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">{msg.senderName}</span>
+                        <span className="text-xs text-muted-foreground">{msg.timestamp}</span>
+                        {msg.escalatedTo && msg.escalatedTo.length > 0 && (
+                          <div className="flex items-center gap-1 text-xs text-destructive">
+                            <AlertTriangle className="h-3 w-3" />
+                            <span>{msg.escalatedTo.map(s => s.name).join(", ")}へエスカレーション</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+              <div className="mt-4 space-y-3">
+                <Textarea
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  placeholder="メッセージを入力..."
+                  className="min-h-[80px]"
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-xs text-muted-foreground">上司へエスカレーション</Label>
+                    <div className="flex flex-wrap gap-4">
+                      {OFFICE_SUPERVISORS.map(supervisor => (
+                        <div key={supervisor.id} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`sup-office-2-${supervisor.id}`} 
+                            checked={selectedSupervisors.includes(supervisor.id)}
+                            onCheckedChange={() => toggleSupervisor(supervisor.id)}
+                          />
+                          <Label htmlFor={`sup-office-2-${supervisor.id}`} className="text-sm font-normal cursor-pointer">
+                            {supervisor.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <Button onClick={handleSendMessage} className="self-end" size="icon">
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* チャット開始ボタン（履歴がない場合） */}
+          {chatHistory.length === 0 && !showChatInput && (
+            <div className="flex justify-end mb-4">
+              <Button variant="outline" size="sm" onClick={() => setShowChatInput(true)}>
+                <MessageSquare className="mr-2 h-4 w-4" />
+                営業担当へメッセージを送る
+              </Button>
+            </div>
+          )}
+
+          {/* チャット入力（履歴がない場合） */}
+          {chatHistory.length === 0 && showChatInput && (
+            <div className="border rounded-lg p-4 bg-muted/30 mb-4">
+              <h4 className="text-sm font-medium mb-3">営業担当へのメッセージ</h4>
+              <div className="space-y-3">
+                <Textarea
+                  value={messageInput}
+                  onChange={(e) => setMessageInput(e.target.value)}
+                  placeholder="メッセージを入力..."
+                  className="min-h-[80px]"
+                />
+                
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-2">
+                    <Label className="text-xs text-muted-foreground">上司へエスカレーション</Label>
+                    <div className="flex flex-wrap gap-4">
+                      {OFFICE_SUPERVISORS.map(supervisor => (
+                        <div key={supervisor.id} className="flex items-center space-x-2">
+                          <Checkbox 
+                            id={`sup-office-init-${supervisor.id}`} 
+                            checked={selectedSupervisors.includes(supervisor.id)}
+                            onCheckedChange={() => toggleSupervisor(supervisor.id)}
+                          />
+                          <Label htmlFor={`sup-office-init-${supervisor.id}`} className="text-sm font-normal cursor-pointer">
+                            {supervisor.name}
+                          </Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="ghost" size="sm" onClick={() => setShowChatInput(false)} className="text-muted-foreground">
+                      キャンセル
+                    </Button>
+                    <Button onClick={handleSendMessage} size="icon">
+                      <Send className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
 
           <div className="space-y-3">

@@ -59,6 +59,21 @@ export interface SelectedAccount {
   accountId: string
 }
 
+export interface Supervisor {
+  id: string
+  name: string
+  role: "sales" | "office"
+}
+
+export interface ChatMessage {
+  id: string
+  sender: "sales" | "office"
+  senderName: string
+  content: string
+  timestamp: string
+  escalatedTo?: Supervisor[]
+}
+
 export interface WorkflowState {
   currentStep: WorkflowStep
   policyDecided: boolean
@@ -69,6 +84,8 @@ export interface WorkflowState {
   step2ConfirmationMessage?: string
   step2SalesReply?: string
   step2SelectedAccount?: SelectedAccount
+  step1ChatHistory: ChatMessage[]
+  chatHistory: ChatMessage[]
   basicInfo: BasicInfo
   intermediateReports: IntermediateReport[]
   finalReport?: {
