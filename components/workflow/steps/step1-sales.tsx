@@ -13,7 +13,17 @@ import { BasicInfoForm } from "@/components/workflow/basic-info-form"
 import { StatusTag } from "@/components/workflow/status-tag"
 import { ApplicationFormModal } from "@/components/workflow/application-form-modal"
 import type { BasicInfo, Step1Status, ChatMessage } from "@/types/workflow"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { FileText, AlertCircle, Send, Database, ClipboardList, ArrowRight, X, MessageSquare } from "lucide-react"
+
+// 繰越額サンプルデータ
+const SAMPLE_CARRYOVER_DATA = [
+  { id: "13419", startDate: "2026-02-13", endDate: "2026-02-16", amount: null },
+  { id: "13326", startDate: "2026-02-01", endDate: "2026-02-08", amount: null },
+  { id: "13201", startDate: "2026-01-26", endDate: "2026-01-29", amount: 0 },
+  { id: "13129", startDate: "2026-01-19", endDate: "2026-01-22", amount: 0 },
+  { id: "12839", startDate: "2026-01-04", endDate: "2026-01-07", amount: 0 },
+]
 
 // サンプルデータ
 const SAMPLE_BASIC_INFO: BasicInfo = {
@@ -340,6 +350,47 @@ LINE広告のお申し込みについて、添付の申込書にご記入の上�
               <AlertDescription>{rejectionReason}</AlertDescription>
             </Alert>
           )}
+
+          {/* 前回までの繰越額 */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-foreground">
+              前回までの繰越額
+            </p>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader className="bg-primary/5">
+                  <TableRow>
+                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>レコード番号</TableHead>
+                    <TableHead>掲載開始希望日</TableHead>
+                    <TableHead>掲載終了日</TableHead>
+                    <TableHead>繰越額</TableHead>
+                    <TableHead>繰越消化期限</TableHead>
+                    <TableHead>繰越消化月</TableHead>
+                    <TableHead>繰越消化</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {SAMPLE_CARRYOVER_DATA.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <FileText className="h-4 w-4 text-primary" />
+                      </TableCell>
+                      <TableCell>{item.id}</TableCell>
+                      <TableCell>{item.startDate}</TableCell>
+                      <TableCell>{item.endDate}</TableCell>
+                      <TableCell>
+                        {item.amount !== null ? `¥ ${item.amount.toLocaleString()}` : ""}
+                      </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
 
           {/* 申込書アップロード */}
           <div className="space-y-2">
