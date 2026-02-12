@@ -6,7 +6,7 @@
     "dev": "bun run next dev",
     "build": "bun run next build",
     "start": "bun run next start",
-    "zip": "zip -r ../demo-jai-goudou.zip . -x \"node_modules/*\" \".next/*\" \".git/*\""
+    "zip": "zip -r ../demo-jai-line.zip . -x \"node_modules/*\" \".next/*\" \".git/*\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
