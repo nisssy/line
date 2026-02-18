@@ -38,7 +38,8 @@ export default function Home() {
   }
 
   if (viewMode === "detail" && selectedProjectId) {
-    return <ProjectDetail projectId={selectedProjectId} onBack={handleBack} onStatusChange={handleStatusChange} />
+    const selectedProject = projects.find(p => p.id === selectedProjectId)
+    return <ProjectDetail projectId={selectedProjectId} project={selectedProject} onBack={handleBack} onStatusChange={handleStatusChange} />
   }
 
   if (viewMode === "create") {

@@ -41,6 +41,16 @@ export interface BasicInfo {
   ageGroup: string
   gender: string
   notes: string
+  // 追加項目
+  anniversaryPack: boolean
+  hallBillingAmount: string
+  previousCarryover: string
+}
+export interface CarryoverItem {
+  id: string
+  startDate: string
+  endDate: string
+  amount: number | null
 }
 
 export interface IntermediateReport {

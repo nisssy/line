@@ -8,11 +8,15 @@ import { Step2Sales } from "@/components/workflow/steps/step2-sales"
 import { Step2Office } from "@/components/workflow/steps/step2-office"
 import { Step3Sales } from "@/components/workflow/steps/step3-sales"
 import { Step3Office } from "@/components/workflow/steps/step3-office"
+import { ChatPanel } from "@/components/workflow/chat-panel"
 import type { UserRole, WorkflowState, WorkflowStep, BasicInfo, SelectedAccount, ChatMessage, Supervisor } from "@/types/workflow"
 
 interface WorkflowContainerProps {
   role: UserRole
+  embedded?: boolean
   onStatusChange?: (status: "preparing" | "skipped") => void
+  renderChatPanel?: boolean
+  materialName?: string
 }
 
 const initialBasicInfo: BasicInfo = {
@@ -32,6 +36,9 @@ const initialBasicInfo: BasicInfo = {
   ageGroup: "",
   gender: "",
   notes: "",
+  anniversaryPack: false,
+  hallBillingAmount: "0",
+  previousCarryover: "0円",
 }
 
 const initialState: WorkflowState = {
@@ -49,7 +56,7 @@ const initialState: WorkflowState = {
   finalReport: undefined,
 }
 
-export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerProps) {
+export function WorkflowContainer({ role, embedded = false, onStatusChange, renderChatPanel = false, materialName }: WorkflowContainerProps) {
   const [state, setState] = useState<WorkflowState>(initialState)
 
   const completedSteps: WorkflowStep[] = []
@@ -102,6 +109,9 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
         ageGroup: "すべて",
         gender: "指定なし",
         notes: "",
+        anniversaryPack: false,
+        hallBillingAmount: "0",
+        previousCarryover: "0円",
       },
     }))
   }
@@ -311,11 +321,11 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
     }))
   }
 
-  return (
-    <div className="space-y-8">
+  const workflowContent = (
+    <>
       <Stepper currentStep={state.currentStep} completedSteps={completedSteps} onStepClick={handleStepClick} />
 
-      <div className="mx-auto max-w-3xl">
+      <div className={embedded ? "" : "mx-auto max-w-3xl"}>
         {/* Step 1 */}
         {state.currentStep === 1 && role === "sales" && (
           <Step1Sales
@@ -397,6 +407,37 @@ export function WorkflowContainer({ role, onStatusChange }: WorkflowContainerPro
           />
         )}
       </div>
+    </>
+  )
+
+  const chatPanelContent = (
+    <ChatPanel
+      role={role}
+      currentStep={state.currentStep}
+      step1ChatHistory={state.step1ChatHistory}
+      step2ChatHistory={state.chatHistory}
+      onSendStep1Message={(content, escalatedTo) => handleStep1SendMessage(content, role, escalatedTo)}
+      onSendStep2Message={(content, escalatedTo) => handleSendMessage(content, role, escalatedTo)}
+      materialName={materialName}
+    />
+  )
+
+  if (renderChatPanel) {
+    return (
+      <div className="flex gap-6 items-start">
+        <div className={`flex-1 min-w-0 ${embedded ? "space-y-6" : "space-y-8"}`}>
+          {workflowContent}
+        </div>
+        <div className="w-[340px] flex-shrink-0 sticky top-6 h-[calc(100vh-120px)]">
+          {chatPanelContent}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className={embedded ? "space-y-6" : "space-y-8"}>
+      {workflowContent}
     </div>
   )
 }

@@ -3,6 +3,7 @@
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -10,17 +11,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import type { BasicInfo } from "@/types/workflow"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { FileText } from "lucide-react"
+import type { BasicInfo, CarryoverItem } from "@/types/workflow"
 
 interface BasicInfoFormProps {
   data: BasicInfo
   onChange: (data: BasicInfo) => void
   disabled?: boolean
+  carryoverHistory?: CarryoverItem[]
 }
 
-export function BasicInfoForm({ data, onChange, disabled = false }: BasicInfoFormProps) {
-  const handleChange = (field: keyof BasicInfo, value: string) => {
+export function BasicInfoForm({ data, onChange, disabled = false, carryoverHistory = [] }: BasicInfoFormProps) {
+  const handleChange = (field: keyof BasicInfo, value: any) => {
     onChange({ ...data, [field]: value })
+  }
+
+  // 周年パック変更時の処理
+  const handleAnniversaryPackChange = (checked: boolean) => {
+    const newData = { ...data, anniversaryPack: checked }
+    if (checked) {
+      newData.hallBillingAmount = "0"
+    }
+    onChange(newData)
   }
 
   return (
@@ -147,7 +167,83 @@ export function BasicInfoForm({ data, onChange, disabled = false }: BasicInfoFor
             />
             <p className="text-xs text-muted-foreground">運用金額の20%をご記入ください</p>
           </div>
+
+          {/* ホール請求額 & 周年パック */}
+          <div className="space-y-2">
+            <Label htmlFor="hallBillingAmount">ホール請求額</Label>
+            <Input
+              id="hallBillingAmount"
+              value={data.hallBillingAmount}
+              onChange={(e) => handleChange("hallBillingAmount", e.target.value)}
+              disabled={disabled || data.anniversaryPack}
+              placeholder="0円"
+            />
+          </div>
+          <div className="flex items-center space-x-2 pt-8">
+            <Checkbox
+              id="anniversaryPack"
+              checked={data.anniversaryPack}
+              onCheckedChange={(checked) => handleAnniversaryPackChange(checked as boolean)}
+              disabled={disabled}
+            />
+            <Label htmlFor="anniversaryPack" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+              周年パック
+            </Label>
+          </div>
+
+          {/* 前回繰越額 */}
+          <div className="space-y-2">
+            <Label htmlFor="previousCarryover">前回繰越額</Label>
+            <Input
+              id="previousCarryover"
+              value={data.previousCarryover}
+              readOnly
+              disabled
+              className="bg-muted"
+            />
+          </div>
         </div>
+
+        {/* 前回までの繰越額一覧 */}
+        {carryoverHistory && carryoverHistory.length > 0 && (
+          <div className="mt-6 space-y-2">
+            <Label>前回までの繰越額一覧</Label>
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader className="bg-primary/5">
+                  <TableRow>
+                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>レコード番号</TableHead>
+                    <TableHead>掲載開始希望日</TableHead>
+                    <TableHead>掲載終了日</TableHead>
+                    <TableHead>繰越額</TableHead>
+                    <TableHead>繰越消化期限</TableHead>
+                    <TableHead>繰越消化月</TableHead>
+                    <TableHead>繰越消化</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {carryoverHistory.map((item) => (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        <FileText className="h-4 w-4 text-primary" />
+                      </TableCell>
+                      <TableCell>{item.id}</TableCell>
+                      <TableCell>{item.startDate}</TableCell>
+                      <TableCell>{item.endDate}</TableCell>
+                      <TableCell>
+                        {item.amount !== null ? `¥ ${item.amount.toLocaleString()}` : ""}
+                      </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
       </section>
 
       {/* ターゲット設定 */}

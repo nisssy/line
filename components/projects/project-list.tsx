@@ -4,9 +4,14 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { ProjectCard } from "@/components/projects/project-card"
 import type { Project } from "@/types/workflow"
-import { FilePlus, List, Bell } from "lucide-react"
+import { FilePlus, List, Bell, Search, X, Plus, Calendar as CalendarIcon } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
 
 interface ProjectListProps {
   onSelectProject: (projectId: string) => void
@@ -18,18 +23,18 @@ interface ProjectListProps {
 export const sampleProjects: Project[] = [
   {
     id: "1",
-    code: "P001",
+    code: "28",
     status: "confirmed",
-    companyName: "メガホール大阪",
-    hallName: "メガホール東京",
-    date: "2024-11-15",
-    location: "大阪府大阪市",
-    budget: 450000,
-    createdAt: "2024-10-01",
+    companyName: "株式会社ビッグパチンコ",
+    hallName: "ビッグパチンコ新宿店",
+    date: "2025-11-15",
+    location: "東京都新宿区",
+    budget: 680000,
+    createdAt: "2025-10-10",
   },
   {
     id: "2",
-    code: "P002",
+    code: "29",
     status: "in_progress",
     companyName: "サンライズホール名古屋",
     hallName: "サンライズホール福岡",
@@ -40,7 +45,7 @@ export const sampleProjects: Project[] = [
   },
   {
     id: "3",
-    code: "P003",
+    code: "30",
     status: "pending",
     companyName: "グランドパレス横浜",
     hallName: "グランドパレス仙台",
@@ -51,7 +56,7 @@ export const sampleProjects: Project[] = [
   },
   {
     id: "4",
-    code: "P004",
+    code: "31",
     status: "completed",
     companyName: "ロイヤルホール札幌",
     hallName: "ロイヤルホール広島",
@@ -106,17 +111,149 @@ export function ProjectList({ onSelectProject, onCreateProject, projects }: Proj
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-8">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold text-foreground">案件一覧</h2>
-              <p className="text-sm text-muted-foreground">全ての案件を管理・確認できます</p>
+        <main className="flex-1 p-8 bg-muted/10">
+          <div className="mb-6 flex items-center justify-between">
+            <div className="flex gap-6">
+              <h2 className="text-lg font-bold text-foreground border-b-2 border-primary pb-1">案件一覧</h2>
+              <h2 className="text-lg font-medium text-muted-foreground pb-1">修正確認依頼</h2>
+              <h2 className="text-lg font-medium text-muted-foreground pb-1">仮押さえ不可</h2>
             </div>
-            <Button onClick={onCreateProject}>
-              <FilePlus className="mr-2 h-4 w-4" />
+            <Button variant="ghost" className="text-primary hover:text-primary/80" onClick={onCreateProject}>
+              <Plus className="mr-2 h-4 w-4" />
               新規案件作成
             </Button>
           </div>
+
+          <Card className="mb-8">
+            <CardHeader className="pb-4">
+              <div className="flex items-center gap-2">
+                <Search className="h-5 w-5 text-muted-foreground" />
+                <CardTitle className="text-lg font-bold">案件検索</CardTitle>
+              </div>
+              <p className="text-sm text-muted-foreground">複数の条件で案件を絞り込むことができます</p>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">法人</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="法人を選択..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="big-pachinko">株式会社ビッグパチンコ</SelectItem>
+                      <SelectItem value="sunrise">サンライズホール名古屋</SelectItem>
+                      <SelectItem value="grand-palace">グランドパレス横浜</SelectItem>
+                      <SelectItem value="royal">ロイヤルホール札幌</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">ホール</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="ホールを選択..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="big-shinjuku">ビッグパチンコ新宿店</SelectItem>
+                      <SelectItem value="sunrise-fukuoka">サンライズホール福岡</SelectItem>
+                      <SelectItem value="grand-sendai">グランドパレス仙台</SelectItem>
+                      <SelectItem value="royal-hiroshima">ロイヤルホール広島</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">商品カテゴリ</Label>
+                  <Select defaultValue="all">
+                    <SelectTrigger>
+                      <SelectValue placeholder="すべて" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">すべて</SelectItem>
+                      <SelectItem value="event">イベント</SelectItem>
+                      <SelectItem value="option">オプション</SelectItem>
+                      <SelectItem value="point">ポイント</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">イベント区分</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="イベント区分を検索..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="line_ad">LINE広告</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">期間</Label>
+                  <div className="flex gap-2">
+                    <Select defaultValue="date">
+                      <SelectTrigger className="w-[100px]">
+                        <SelectValue placeholder="実施日" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date">実施日</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="relative flex-1">
+                        <Input placeholder="年 / 月 / 日" />
+                        <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div className="relative flex-1">
+                        <Input placeholder="年 / 月 / 日" />
+                        <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">ホール担当</Label>
+                  <Select defaultValue="yamada">
+                    <SelectTrigger>
+                      <SelectValue placeholder="山田太郎" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="yamada">山田太郎</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">案件No</Label>
+                  <Input placeholder="案件Noを入力..." />
+                </div>
+
+                <div className="space-y-2 md:col-span-3">
+                  <Label className="text-sm font-bold">案件名</Label>
+                  <Input placeholder="案件名を入力..." />
+                </div>
+              </div>
+
+              <Separator className="my-4" />
+
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">検索条件:</span>
+                  <Badge variant="secondary" className="gap-1 font-normal">
+                    ホール担当: 山田太郎
+                    <X className="h-3 w-3 cursor-pointer" />
+                  </Badge>
+                </div>
+                <Button variant="outline" size="sm">
+                  すべてクリア
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="space-y-4">
             {projects.map((project) => (
@@ -128,3 +265,4 @@ export function ProjectList({ onSelectProject, onCreateProject, projects }: Proj
     </div>
   )
 }
+
