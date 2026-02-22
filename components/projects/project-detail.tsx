@@ -15,18 +15,13 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import type { UserRole, ProjectStatus, Project } from "@/types/workflow"
+import type { UserRole, ProjectStatus, Project, CompanyData, HallData } from "@/types/workflow"
+import { CompanyHallCombobox } from "@/components/projects/company-hall-combobox"
+import { initialCompanies, initialHalls } from "@/lib/master-data"
 import {
   ArrowLeft,
   ChevronUp,
@@ -58,14 +53,23 @@ export function ProjectDetail({
 }: ProjectDetailProps) {
   const [role, setRole] = useState<UserRole>("sales")
 
-  // 基本情報
-  const [projectName, setProjectName] = useState("秋のキャンペーン⑤")
-  const [salesRep, setSalesRep] = useState("荒井 さくら")
+  // プロジェクトの法人・ホールをマスタデータから初期化
+  const initCompany = project
+    ? initialCompanies.find((c) => c.companyId === project.companyId) || null
+    : null
+  const initHall = project
+    ? initialHalls.find((h) => h.hallId === project.hallId) || null
+    : null
+
+  const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(initCompany)
+  const [selectedHall, setSelectedHall] = useState<HallData | null>(initHall)
+
+  const [projectName, setProjectName] = useState(project?.name || "新規案件")
+  const [salesRep, setSalesRep] = useState(project?.salesRep || "")
   const [requestDate, setRequestDate] = useState(
-    project?.createdAt || "2025-10-10"
+    project?.createdAt || new Date().toISOString().split("T")[0]
   )
 
-  // 商材情報（複数）- 最初の1件は確定済み
   const [materials, setMaterials] = useState<MaterialInfo[]>([
     {
       id: "1",
@@ -78,9 +82,6 @@ export function ProjectDetail({
       isConfirmed: true,
     },
   ])
-
-  const companyName = project?.companyName || "株式会社ビッグパチンコ"
-  const hallName = project?.hallName || "ビッグパチンコ新宿店"
 
   const handleWorkflowStatusChange = (status: "preparing" | "skipped") => {
     onStatusChange(status)
@@ -182,33 +183,32 @@ export function ProjectDetail({
               基本情報
             </h2>
             <div className="space-y-5">
+              {/* 法人名・ホール名 検索選択 */}
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">法人名・ホール名</Label>
+                <CompanyHallCombobox
+                  selectedCompany={selectedCompany}
+                  selectedHall={selectedHall}
+                  onSelectCompany={setSelectedCompany}
+                  onSelectHall={setSelectedHall}
+                />
+              </div>
+
               {/* 法人名 / 法人ID */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">
-                    法人名
-                  </Label>
-                  <Select value="c-big">
-                    <SelectTrigger className="bg-white">
-                      <SelectValue>{companyName}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="c-big">{companyName}</SelectItem>
-                      <SelectItem value="c-sunrise">
-                        サンライズグループ
-                      </SelectItem>
-                      <SelectItem value="c-grand">
-                        グランドパレス株式会社
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm text-muted-foreground">法人名</Label>
+                  <Input
+                    value={selectedCompany?.name || ""}
+                    readOnly
+                    disabled
+                    className="bg-gray-50"
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">
-                    法人ID
-                  </Label>
+                  <Label className="text-sm text-muted-foreground">法人ID</Label>
                   <Input
-                    value="CORP-010"
+                    value={selectedCompany?.companyId || ""}
                     readOnly
                     disabled
                     className="bg-gray-50"
@@ -219,24 +219,18 @@ export function ProjectDetail({
               {/* ホール名 / ホールID */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">
-                    ホール名
-                  </Label>
-                  <Select value="h-shinjuku">
-                    <SelectTrigger className="bg-white">
-                      <SelectValue>{hallName}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="h-shinjuku">{hallName}</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-sm text-muted-foreground">ホール名</Label>
+                  <Input
+                    value={selectedHall?.name || ""}
+                    readOnly
+                    disabled
+                    className="bg-gray-50"
+                  />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">
-                    ホールID
-                  </Label>
+                  <Label className="text-sm text-muted-foreground">ホールID</Label>
                   <Input
-                    value="CORP-010-HALL-03"
+                    value={selectedHall?.hallId || ""}
                     readOnly
                     disabled
                     className="bg-gray-50"
@@ -337,6 +331,11 @@ export function ProjectDetail({
                           renderChatPanel
                           materialName={`${projectName} - 商材${toCircledNumber(index + 1)}`}
                           onStatusChange={handleWorkflowStatusChange}
+                          materialUsageMethod={material.usageMethod}
+                          materialSelectedPackId={material.selectedPackId}
+                          materialSelectedPackTitle={
+                            SAMPLE_ANNIVERSARY_PACKS.find(p => p.id === material.selectedPackId)?.title
+                          }
                         />
                       </>
                     )}

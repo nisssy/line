@@ -6,24 +6,18 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import type { Project } from "@/types/workflow"
+import type { Project, CompanyData, HallData } from "@/types/workflow"
 import {
   MaterialInfoForm,
   createDefaultMaterial,
   SAMPLE_ANNIVERSARY_PACKS,
 } from "@/components/projects/material-info-form"
 import type { MaterialInfo } from "@/components/projects/material-info-form"
+import { CompanyHallCombobox } from "@/components/projects/company-hall-combobox"
 import { ArrowLeft, ChevronUp, ChevronDown, Plus, Trash2, RefreshCw, ArrowRightLeft } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 
@@ -32,29 +26,6 @@ interface ProjectFormProps {
   onSubmit: (project: Project) => void
 }
 
-// サンプル法人データ
-const companies = [
-  { id: "c1", name: "株式会社メガホールディングス", corpId: "CORP-001" },
-  { id: "c2", name: "サンライズグループ", corpId: "CORP-002" },
-  { id: "c3", name: "グランドパレス株式会社", corpId: "CORP-003" },
-  { id: "c4", name: "ロイヤルホールディングス", corpId: "CORP-004" },
-  { id: "c5", name: "株式会社XXXX", corpId: "CORP-005" },
-]
-
-// 全店舗データ（法人IDを紐付け）
-const allStores = [
-  { id: "s1", name: "メガホール大阪", location: "大阪府大阪市", hallId: "CORP-001-HALL-01", companyId: "c1" },
-  { id: "s2", name: "メガホール東京", location: "東京都新宿区", hallId: "CORP-001-HALL-02", companyId: "c1" },
-  { id: "s3", name: "メガホール名古屋", location: "愛知県名古屋市", hallId: "CORP-001-HALL-03", companyId: "c1" },
-  { id: "s4", name: "サンライズホール名古屋", location: "愛知県名古屋市", hallId: "CORP-002-HALL-01", companyId: "c2" },
-  { id: "s5", name: "サンライズホール福岡", location: "福岡県福岡市", hallId: "CORP-002-HALL-02", companyId: "c2" },
-  { id: "s6", name: "グランドパレス横浜", location: "神奈川県横浜市", hallId: "CORP-003-HALL-01", companyId: "c3" },
-  { id: "s7", name: "グランドパレス仙台", location: "宮城県仙台市", hallId: "CORP-003-HALL-02", companyId: "c3" },
-  { id: "s8", name: "ロイヤルホール札幌", location: "北海道札幌市", hallId: "CORP-004-HALL-01", companyId: "c4" },
-  { id: "s9", name: "ロイヤルホール広島", location: "広島県広島市", hallId: "CORP-004-HALL-02", companyId: "c4" },
-  { id: "s10", name: "XXXXX店", location: "北海道札幌市", hallId: "CORP-005-HALL-01", companyId: "c5" },
-]
-
 const CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
 
 function toCircledNumber(n: number): string {
@@ -62,8 +33,8 @@ function toCircledNumber(n: number): string {
 }
 
 export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
-  const [selectedCompany, setSelectedCompany] = useState("")
-  const [selectedStore, setSelectedStore] = useState("")
+  const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null)
+  const [selectedHall, setSelectedHall] = useState<HallData | null>(null)
   const [projectName, setProjectName] = useState("")
   const [salesRep, setSalesRep] = useState("")
   const [requestDate, setRequestDate] = useState(
@@ -73,30 +44,6 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
   const [materials, setMaterials] = useState<MaterialInfo[]>([
     createDefaultMaterial("1"),
   ])
-
-  const availableStores = selectedCompany
-    ? allStores.filter((s) => s.companyId === selectedCompany)
-    : allStores
-  const selectedStoreData = allStores.find((s) => s.id === selectedStore)
-  const selectedCompanyData = companies.find((c) => c.id === selectedCompany)
-
-  const handleStoreChange = (storeId: string) => {
-    setSelectedStore(storeId)
-    const store = allStores.find((s) => s.id === storeId)
-    if (store) {
-      setSelectedCompany(store.companyId)
-    }
-  }
-
-  const handleCompanyChange = (companyId: string) => {
-    setSelectedCompany(companyId)
-    if (selectedStore) {
-      const currentStore = allStores.find((s) => s.id === selectedStore)
-      if (currentStore && currentStore.companyId !== companyId) {
-        setSelectedStore("")
-      }
-    }
-  }
 
   const updateMaterial = (id: string, updates: Partial<MaterialInfo>) => {
     setMaterials((prev) =>
@@ -126,24 +73,34 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
   }
 
   const handleSubmit = () => {
-    if (!selectedCompany || !selectedStore) return
+    if (!selectedCompany || !selectedHall) return
+
+    const confirmedMaterials = materials.filter((m) => m.isConfirmed)
+    const firstMaterial = confirmedMaterials[0] || materials[0]
 
     const newProject: Project = {
       id: `new-${Date.now()}`,
       code: `P${String(Math.floor(Math.random() * 900) + 100).padStart(3, "0")}`,
+      name: projectName || `${selectedHall.name} - ${salesRep || "新規案件"}`,
       status: "pending",
-      companyName: selectedCompanyData?.name || "",
-      hallName: selectedStoreData?.name || "",
+      companyName: selectedCompany.name,
+      companyId: selectedCompany.companyId,
+      hallName: selectedHall.name,
+      hallId: selectedHall.hallId,
+      salesRep: salesRep || selectedHall.salesPersonName,
       date: requestDate,
-      location: selectedStoreData?.location || "",
+      location: selectedHall.address || "",
       budget: 0,
       createdAt: new Date().toISOString().split("T")[0],
+      materialCount: Math.max(confirmedMaterials.length, 1),
+      category: firstMaterial?.category === "event" ? "イベント" : firstMaterial?.category === "option" ? "オプション" : firstMaterial?.category === "point" ? "ポイント" : undefined,
+      division: firstMaterial?.division === "line_ad" ? "LINE広告" : undefined,
     }
 
     onSubmit(newProject)
   }
 
-  const isValid = selectedCompany && selectedStore
+  const isValid = selectedCompany && selectedHall
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -196,30 +153,32 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
             </h2>
 
             <div className="space-y-5">
-              {/* 法人名 / 法人ID */}
+              {/* 法人名・ホール名 検索選択 */}
+              <div className="space-y-1.5">
+                <Label className="text-sm text-muted-foreground">法人名・ホール名</Label>
+                <CompanyHallCombobox
+                  selectedCompany={selectedCompany}
+                  selectedHall={selectedHall}
+                  onSelectCompany={setSelectedCompany}
+                  onSelectHall={setSelectedHall}
+                />
+              </div>
+
+              {/* 法人ID / ホールID */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <Label className="text-sm text-muted-foreground">法人名</Label>
-                  <Select
-                    value={selectedCompany}
-                    onValueChange={handleCompanyChange}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="法人名を検索..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {companies.map((company) => (
-                        <SelectItem key={company.id} value={company.id}>
-                          {company.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={selectedCompany?.name || ""}
+                    readOnly
+                    disabled
+                    className="bg-gray-50"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm text-muted-foreground">法人ID</Label>
                   <Input
-                    value={selectedCompanyData?.corpId || ""}
+                    value={selectedCompany?.companyId || ""}
                     readOnly
                     disabled
                     className="bg-gray-50"
@@ -227,30 +186,20 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
                 </div>
               </div>
 
-              {/* ホール名 / ホールID */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1.5">
                   <Label className="text-sm text-muted-foreground">ホール名</Label>
-                  <Select
-                    value={selectedStore}
-                    onValueChange={handleStoreChange}
-                  >
-                    <SelectTrigger className="bg-white">
-                      <SelectValue placeholder="ホール名を検索..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableStores.map((store) => (
-                        <SelectItem key={store.id} value={store.id}>
-                          {store.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Input
+                    value={selectedHall?.name || ""}
+                    readOnly
+                    disabled
+                    className="bg-gray-50"
+                  />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-sm text-muted-foreground">ホールID</Label>
                   <Input
-                    value={selectedStoreData?.hallId || ""}
+                    value={selectedHall?.hallId || ""}
                     readOnly
                     disabled
                     className="bg-gray-50"
@@ -274,7 +223,7 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
                 <div className="space-y-1.5">
                   <Label className="text-sm text-muted-foreground">ホール担当営業</Label>
                   <Input
-                    value={salesRep}
+                    value={salesRep || selectedHall?.salesPersonName || ""}
                     onChange={(e) => setSalesRep(e.target.value)}
                     placeholder="例: 山田 太郎"
                     className="bg-white"

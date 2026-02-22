@@ -19,7 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { FileText } from "lucide-react"
+import { FileText, Gift } from "lucide-react"
 import type { BasicInfo, CarryoverItem } from "@/types/workflow"
 
 interface BasicInfoFormProps {
@@ -173,7 +173,7 @@ export function BasicInfoForm({ data, onChange, disabled = false, carryoverHisto
             <Label htmlFor="hallBillingAmount">ホール請求額</Label>
             <Input
               id="hallBillingAmount"
-              value={data.hallBillingAmount}
+              value={data.anniversaryPack ? "0" : data.hallBillingAmount}
               onChange={(e) => handleChange("hallBillingAmount", e.target.value)}
               disabled={disabled || data.anniversaryPack}
               placeholder="0円"
@@ -190,6 +190,28 @@ export function BasicInfoForm({ data, onChange, disabled = false, carryoverHisto
               周年パック
             </Label>
           </div>
+
+          {/* 周年パック選択時の情報表示 */}
+          {data.anniversaryPack && (
+            <div className="md:col-span-2">
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Gift className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-bold text-primary">周年パック適用中</span>
+                </div>
+                {data.selectedPackTitle && (
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">適用パック</span>
+                    <span className="text-sm font-medium">{data.selectedPackTitle}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between border-t border-primary/20 pt-2">
+                  <span className="text-sm text-muted-foreground">ホール請求額</span>
+                  <span className="text-sm font-bold text-primary">¥0</span>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 前回繰越額 */}
           <div className="space-y-2">

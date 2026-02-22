@@ -61,6 +61,9 @@ interface Step1SalesProps {
   onProceedWithDelivery: () => void
   onSkipDelivery: () => void
   onSendMessage: (content: string, escalatedTo?: Supervisor[]) => void
+  materialUsageMethod?: string
+  materialSelectedPackId?: string
+  materialSelectedPackTitle?: string
 }
 
 export function Step1Sales({
@@ -77,6 +80,9 @@ export function Step1Sales({
   onProceedWithDelivery,
   onSkipDelivery,
   onSendMessage,
+  materialUsageMethod,
+  materialSelectedPackId,
+  materialSelectedPackTitle,
 }: Step1SalesProps) {
   const [applicationSent, setApplicationSent] = useState(false)
   const [applicationUploaded, setApplicationUploaded] = useState(false)
@@ -98,7 +104,14 @@ export function Step1Sales({
   const handleLoadSampleData = () => {
     setApplicationUploaded(true)
     setUploadedFileName("LINE広告申込書_サンプル.xlsx")
-    onBasicInfoChange(SAMPLE_BASIC_INFO)
+    const isAnniversaryPack = materialUsageMethod === "anniversary_pack"
+    onBasicInfoChange({
+      ...SAMPLE_BASIC_INFO,
+      anniversaryPack: isAnniversaryPack,
+      hallBillingAmount: isAnniversaryPack ? "0" : SAMPLE_BASIC_INFO.hallBillingAmount,
+      selectedPackId: isAnniversaryPack ? materialSelectedPackId : undefined,
+      selectedPackTitle: isAnniversaryPack ? materialSelectedPackTitle : undefined,
+    })
   }
 
   // 見送りの場合

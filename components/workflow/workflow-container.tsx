@@ -17,6 +17,9 @@ interface WorkflowContainerProps {
   onStatusChange?: (status: "preparing" | "skipped") => void
   renderChatPanel?: boolean
   materialName?: string
+  materialUsageMethod?: string
+  materialSelectedPackId?: string
+  materialSelectedPackTitle?: string
 }
 
 const initialBasicInfo: BasicInfo = {
@@ -56,7 +59,7 @@ const initialState: WorkflowState = {
   finalReport: undefined,
 }
 
-export function WorkflowContainer({ role, embedded = false, onStatusChange, renderChatPanel = false, materialName }: WorkflowContainerProps) {
+export function WorkflowContainer({ role, embedded = false, onStatusChange, renderChatPanel = false, materialName, materialUsageMethod, materialSelectedPackId, materialSelectedPackTitle }: WorkflowContainerProps) {
   const [state, setState] = useState<WorkflowState>(initialState)
 
   const completedSteps: WorkflowStep[] = []
@@ -88,7 +91,7 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
   }
 
   const handleUploadApplication = (file: File) => {
-    // Simulate extracting info from uploaded file
+    const isAnniversaryPack = materialUsageMethod === "anniversary_pack"
     setState((prev) => ({
       ...prev,
       basicInfo: {
@@ -109,9 +112,11 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
         ageGroup: "すべて",
         gender: "指定なし",
         notes: "",
-        anniversaryPack: false,
-        hallBillingAmount: "0",
+        anniversaryPack: isAnniversaryPack,
+        hallBillingAmount: isAnniversaryPack ? "0" : "0",
         previousCarryover: "0円",
+        selectedPackId: isAnniversaryPack ? materialSelectedPackId : undefined,
+        selectedPackTitle: isAnniversaryPack ? materialSelectedPackTitle : undefined,
       },
     }))
   }
@@ -342,6 +347,9 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
             onProceedWithDelivery={handleProceedWithDelivery}
             onSkipDelivery={handleSkipDelivery}
             onSendMessage={(content, escalatedTo) => handleStep1SendMessage(content, "sales", escalatedTo)}
+            materialUsageMethod={materialUsageMethod}
+            materialSelectedPackId={materialSelectedPackId}
+            materialSelectedPackTitle={materialSelectedPackTitle}
           />
         )}
 

@@ -33,12 +33,12 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
         <div className="flex items-start justify-between mb-6">
           <div className="space-y-1">
             <div className="flex items-center gap-3">
-              <h3 className="text-2xl font-bold text-foreground">秋のキャンペーン⑤</h3>
+              <h3 className="text-2xl font-bold text-foreground">{project.name}</h3>
             </div>
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
               <span>案件No: {project.code}</span>
               <Badge variant="secondary" className="font-normal text-xs bg-muted text-muted-foreground border-border">
-                1件の商材
+                {project.materialCount}件の商材
               </Badge>
             </div>
           </div>
@@ -54,7 +54,7 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
                 <span className="font-medium">{project.companyName}</span>
               </div>
               <div className="pl-6 text-xs text-muted-foreground">
-                法人ID: CORP-010
+                法人ID: {project.companyId}
               </div>
             </div>
 
@@ -65,7 +65,7 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
                 <span className="font-medium">{project.hallName}</span>
               </div>
               <div className="pl-6 text-xs text-muted-foreground">
-                ホールID: CORP-010-HALL-03
+                ホールID: {project.hallId}
               </div>
             </div>
 
@@ -73,7 +73,7 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
               <div className="flex items-center gap-2 text-sm">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <span className="text-muted-foreground">担当営業:</span>
-                <span className="font-medium">山田太郎</span>
+                <span className="font-medium">{project.salesRep}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -105,7 +105,7 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
         <div className="space-y-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <span className="font-bold text-sm">秋のキャンペーン⑤</span>
+              <span className="font-bold text-sm">{project.name}</span>
               <Badge className={`${status.className} border-0`}>
                 {status.label}
               </Badge>
@@ -122,7 +122,6 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
               <div className="font-medium">{project.hallName}</div>
             </div>
             
-            {/* Empty column for alignment if needed, or merge with above */}
             <div className="hidden md:block"></div>
             <div className="hidden md:block"></div>
             <div className="hidden md:block"></div>
@@ -137,12 +136,12 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
 
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">商材カテゴリ</div>
-              <div className="font-medium">イベント</div>
+              <div className="font-medium">{project.category || "—"}</div>
             </div>
 
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">イベント区分</div>
-              <div className="font-medium">LINE広告</div>
+              <div className="font-medium">{project.division || "—"}</div>
             </div>
 
             <div className="space-y-1">
@@ -152,7 +151,7 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
 
             <div className="space-y-1 md:col-start-4">
               <div className="text-xs text-muted-foreground text-right">担当営業</div>
-              <div className="font-medium text-right">山田 太郎</div>
+              <div className="font-medium text-right">{project.salesRep}</div>
             </div>
           </div>
         </div>

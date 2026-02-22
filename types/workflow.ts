@@ -1,3 +1,29 @@
+export type CompanyData = {
+  id: number
+  companyId: string
+  name: string
+  email?: string
+}
+
+export type HallData = {
+  id: number
+  hallId: string
+  name: string
+  salesPersonName: string
+  companyId: number
+  discountAmount: number
+  address?: string
+  email?: string
+  prefecture?: string
+}
+
+export type EmployeeData = {
+  id: number
+  name: string
+  email: string
+  department?: string
+}
+
 export type UserRole = "sales" | "office"
 
 export type ProjectStatus = "confirmed" | "in_progress" | "pending" | "completed" | "preparing" | "skipped"
@@ -5,13 +31,20 @@ export type ProjectStatus = "confirmed" | "in_progress" | "pending" | "completed
 export interface Project {
   id: string
   code: string
+  name: string
   status: ProjectStatus
   companyName: string
+  companyId: string
   hallName: string
+  hallId: string
+  salesRep: string
   date: string
   location: string
   budget: number
   createdAt: string
+  materialCount: number
+  category?: string
+  division?: string
 }
 
 export type Step1Status =
@@ -45,6 +78,8 @@ export interface BasicInfo {
   anniversaryPack: boolean
   hallBillingAmount: string
   previousCarryover: string
+  selectedPackId?: string
+  selectedPackTitle?: string
 }
 export interface CarryoverItem {
   id: string

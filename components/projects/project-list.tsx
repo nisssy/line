@@ -1,10 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { ProjectCard } from "@/components/projects/project-card"
-import type { Project } from "@/types/workflow"
-import { FilePlus, List, Bell, Search, X, Plus, Calendar as CalendarIcon } from "lucide-react"
+import type { Project, CompanyData, HallData } from "@/types/workflow"
+import { FilePlus, List, Bell, Search, X, Plus, Calendar as CalendarIcon, Check, ChevronsUpDown } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
@@ -12,6 +12,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
+import { initialCompanies, initialHalls, searchCompanies, searchHalls } from "@/lib/master-data"
 
 interface ProjectListProps {
   onSelectProject: (projectId: string) => void
@@ -19,56 +23,99 @@ interface ProjectListProps {
   projects: Project[]
 }
 
-// サンプルデータ
+// サンプルデータ（マスタデータ整合）
 export const sampleProjects: Project[] = [
   {
     id: "1",
     code: "28",
+    name: "秋のキャンペーン⑤",
     status: "confirmed",
     companyName: "株式会社ビッグパチンコ",
+    companyId: "CORP-010",
     hallName: "ビッグパチンコ新宿店",
+    hallId: "CORP-010-HALL-03",
+    salesRep: "山田 太郎",
     date: "2025-11-15",
     location: "東京都新宿区",
     budget: 680000,
     createdAt: "2025-10-10",
+    materialCount: 1,
+    category: "イベント",
+    division: "LINE広告",
   },
   {
     id: "2",
     code: "29",
+    name: "年末キャンペーン",
     status: "in_progress",
-    companyName: "サンライズホール名古屋",
-    hallName: "サンライズホール福岡",
+    companyName: "株式会社ダイナム",
+    companyId: "CORP-002",
+    hallName: "ダイナム渋谷店",
+    hallId: "CORP-002-HALL-02",
+    salesRep: "佐藤 次郎",
     date: "2024-12-01",
-    location: "愛知県名古屋市",
+    location: "東京都",
     budget: 380000,
     createdAt: "2024-10-15",
+    materialCount: 1,
+    category: "イベント",
+    division: "LINE広告",
   },
   {
     id: "3",
     code: "30",
+    name: "新春イベント",
     status: "pending",
-    companyName: "グランドパレス横浜",
-    hallName: "グランドパレス仙台",
+    companyName: "株式会社ガイア",
+    companyId: "CORP-003",
+    hallName: "ガイア横浜店",
+    hallId: "CORP-003-HALL-08",
+    salesRep: "鈴木 三郎",
     date: "2025-01-10",
-    location: "神奈川県横浜市",
+    location: "神奈川県",
     budget: 520000,
     createdAt: "2024-11-01",
+    materialCount: 2,
+    category: "イベント",
+    division: "LINE広告",
   },
   {
     id: "4",
     code: "31",
+    name: "夏祭りフェア",
     status: "completed",
-    companyName: "ロイヤルホール札幌",
-    hallName: "ロイヤルホール広島",
+    companyName: "株式会社エース",
+    companyId: "CORP-004",
+    hallName: "エース池袋店",
+    hallId: "CORP-004-HALL-04",
+    salesRep: "高橋 四郎",
     date: "2024-09-20",
-    location: "北海道札幌市",
+    location: "東京都",
     budget: 290000,
     createdAt: "2024-08-15",
+    materialCount: 1,
+    category: "イベント",
+    division: "LINE広告",
   },
 ]
 
 export function ProjectList({ onSelectProject, onCreateProject, projects }: ProjectListProps) {
   const [roleToggle, setRoleToggle] = useState(false)
+  const [filterCompany, setFilterCompany] = useState<CompanyData | null>(null)
+  const [filterHall, setFilterHall] = useState<HallData | null>(null)
+  const [companyOpen, setCompanyOpen] = useState(false)
+  const [hallOpen, setHallOpen] = useState(false)
+  const [companyQuery, setCompanyQuery] = useState("")
+  const [hallQuery, setHallQuery] = useState("")
+
+  const filteredCompanies = useMemo(
+    () => searchCompanies(initialCompanies, companyQuery),
+    [companyQuery]
+  )
+  const filteredHalls = useMemo(
+    () => searchHalls(initialHalls, hallQuery, filterCompany?.id),
+    [hallQuery, filterCompany?.id]
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -136,32 +183,91 @@ export function ProjectList({ onSelectProject, onCreateProject, projects }: Proj
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 <div className="space-y-2">
                   <Label className="text-sm font-bold">法人</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="法人を選択..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="big-pachinko">株式会社ビッグパチンコ</SelectItem>
-                      <SelectItem value="sunrise">サンライズホール名古屋</SelectItem>
-                      <SelectItem value="grand-palace">グランドパレス横浜</SelectItem>
-                      <SelectItem value="royal">ロイヤルホール札幌</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Popover open={companyOpen} onOpenChange={setCompanyOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={companyOpen}
+                        className={cn("w-full justify-between font-normal", !filterCompany && "text-muted-foreground")}
+                      >
+                        {filterCompany ? filterCompany.name : "法人を選択..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[320px] p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput placeholder="法人名・コードで検索..." value={companyQuery} onValueChange={setCompanyQuery} />
+                        <CommandList>
+                          <CommandEmpty>該当する法人が見つかりません</CommandEmpty>
+                          <CommandGroup>
+                            {filteredCompanies.map((c) => (
+                              <CommandItem
+                                key={c.id}
+                                value={String(c.id)}
+                                onSelect={() => {
+                                  setFilterCompany(filterCompany?.id === c.id ? null : c)
+                                  if (filterCompany?.id !== c.id) setFilterHall(null)
+                                  setCompanyQuery("")
+                                  setCompanyOpen(false)
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", filterCompany?.id === c.id ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span className="text-sm">{c.name}</span>
+                                  <span className="text-xs text-muted-foreground">{c.companyId}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-sm font-bold">ホール</Label>
-                  <Select>
-                    <SelectTrigger>
-                      <SelectValue placeholder="ホールを選択..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="big-shinjuku">ビッグパチンコ新宿店</SelectItem>
-                      <SelectItem value="sunrise-fukuoka">サンライズホール福岡</SelectItem>
-                      <SelectItem value="grand-sendai">グランドパレス仙台</SelectItem>
-                      <SelectItem value="royal-hiroshima">ロイヤルホール広島</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Popover open={hallOpen} onOpenChange={setHallOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={hallOpen}
+                        className={cn("w-full justify-between font-normal", !filterHall && "text-muted-foreground")}
+                      >
+                        {filterHall ? filterHall.name : "ホールを選択..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[320px] p-0" align="start">
+                      <Command shouldFilter={false}>
+                        <CommandInput placeholder="ホール名で検索..." value={hallQuery} onValueChange={setHallQuery} />
+                        <CommandList>
+                          <CommandEmpty>該当するホールが見つかりません</CommandEmpty>
+                          <CommandGroup>
+                            {filteredHalls.map((h) => (
+                              <CommandItem
+                                key={h.id}
+                                value={String(h.id)}
+                                onSelect={() => {
+                                  setFilterHall(filterHall?.id === h.id ? null : h)
+                                  setHallQuery("")
+                                  setHallOpen(false)
+                                }}
+                              >
+                                <Check className={cn("mr-2 h-4 w-4", filterHall?.id === h.id ? "opacity-100" : "opacity-0")} />
+                                <div className="flex flex-col">
+                                  <span className="text-sm">{h.name}</span>
+                                  <span className="text-xs text-muted-foreground">担当: {h.salesPersonName}</span>
+                                </div>
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
                 </div>
 
                 <div className="space-y-2">
@@ -223,6 +329,40 @@ export function ProjectList({ onSelectProject, onCreateProject, projects }: Proj
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="yamada">山田太郎</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">部やエリア</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="すべて" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">すべて</SelectItem>
+                      <SelectItem value="tokyo">東京都</SelectItem>
+                      <SelectItem value="kanagawa">神奈川県</SelectItem>
+                      <SelectItem value="saitama">埼玉県</SelectItem>
+                      <SelectItem value="chiba">千葉県</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-bold">ステータス</Label>
+                  <Select>
+                    <SelectTrigger>
+                      <SelectValue placeholder="すべて" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">すべて</SelectItem>
+                      <SelectItem value="confirmed">確定</SelectItem>
+                      <SelectItem value="in_progress">進行中</SelectItem>
+                      <SelectItem value="pending">審議中</SelectItem>
+                      <SelectItem value="preparing">準備中</SelectItem>
+                      <SelectItem value="completed">完了</SelectItem>
+                      <SelectItem value="skipped">スキップ</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
