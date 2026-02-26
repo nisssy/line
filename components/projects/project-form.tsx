@@ -73,23 +73,27 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
   }
 
   const handleSubmit = () => {
-    if (!selectedCompany || !selectedHall) return
+    if (!selectedCompany || !projectName.trim() || !requestDate) return
 
     const confirmedMaterials = materials.filter((m) => m.isConfirmed)
-    const firstMaterial = confirmedMaterials[0] || materials[0]
+    if (confirmedMaterials.length === 0) return
+    const firstMaterial = confirmedMaterials[0]
+
+    const resolvedSalesRep = salesRep || selectedHall?.salesPersonName || ""
+    if (!resolvedSalesRep) return
 
     const newProject: Project = {
       id: `new-${Date.now()}`,
       code: `P${String(Math.floor(Math.random() * 900) + 100).padStart(3, "0")}`,
-      name: projectName || `${selectedHall.name} - ${salesRep || "新規案件"}`,
+      name: projectName,
       status: "pending",
       companyName: selectedCompany.name,
       companyId: selectedCompany.companyId,
-      hallName: selectedHall.name,
-      hallId: selectedHall.hallId,
-      salesRep: salesRep || selectedHall.salesPersonName,
+      hallName: selectedHall?.name,
+      hallId: selectedHall?.hallId,
+      salesRep: resolvedSalesRep,
       date: requestDate,
-      location: selectedHall.address || "",
+      location: selectedHall?.address || "",
       budget: 0,
       createdAt: new Date().toISOString().split("T")[0],
       materialCount: Math.max(confirmedMaterials.length, 1),
@@ -100,7 +104,13 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
     onSubmit(newProject)
   }
 
-  const isValid = selectedCompany && selectedHall
+  const hasConfirmedMaterial = materials.some((m) => m.isConfirmed)
+  const isValid =
+    !!selectedCompany &&
+    !!projectName.trim() &&
+    !!(salesRep || selectedHall?.salesPersonName) &&
+    !!requestDate &&
+    hasConfirmedMaterial
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -155,7 +165,7 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
             <div className="space-y-5">
               {/* 法人名・ホール名 検索選択 */}
               <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">法人名・ホール名</Label>
+                <Label className="text-sm text-muted-foreground">法人名・ホール名 <span className="text-destructive">*</span></Label>
                 <CompanyHallCombobox
                   selectedCompany={selectedCompany}
                   selectedHall={selectedHall}
@@ -209,7 +219,7 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
 
               {/* 案件名 */}
               <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">案件名</Label>
+                <Label className="text-sm text-muted-foreground">案件名 <span className="text-destructive">*</span></Label>
                 <Input
                   value={projectName}
                   onChange={(e) => setProjectName(e.target.value)}
@@ -221,7 +231,7 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
               {/* ホール担当営業 / 依頼日 */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">ホール担当営業</Label>
+                  <Label className="text-sm text-muted-foreground">ホール担当営業 <span className="text-destructive">*</span></Label>
                   <Input
                     value={salesRep || selectedHall?.salesPersonName || ""}
                     onChange={(e) => setSalesRep(e.target.value)}
@@ -230,7 +240,7 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-sm text-muted-foreground">依頼日</Label>
+                  <Label className="text-sm text-muted-foreground">依頼日 <span className="text-destructive">*</span></Label>
                   <Input
                     type="date"
                     value={requestDate}
@@ -253,7 +263,7 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
               <CardContent className="p-6">
                 <CollapsibleTrigger className="flex items-center justify-between w-full">
                   <h2 className="text-base font-bold text-foreground">
-                    商材情報{toCircledNumber(index + 1)}
+                    商材情報{toCircledNumber(index + 1)} <span className="text-destructive text-sm">*</span>
                   </h2>
                   <div className="flex items-center gap-2">
                     {materials.length > 1 && (

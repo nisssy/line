@@ -37,6 +37,7 @@ interface ProjectDetailProps {
   project?: Project
   onBack: () => void
   onStatusChange: (status: ProjectStatus) => void
+  onProjectUpdate: (updatedProject: Project) => void
 }
 
 const CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
@@ -50,6 +51,7 @@ export function ProjectDetail({
   project,
   onBack,
   onStatusChange,
+  onProjectUpdate,
 }: ProjectDetailProps) {
   const [role, setRole] = useState<UserRole>("sales")
 
@@ -114,6 +116,29 @@ export function ProjectDetail({
     )
   }
 
+  const handleBackWithSave = () => {
+    if (project) {
+      const confirmedMaterials = materials.filter((m) => m.isConfirmed)
+      const firstMaterial = confirmedMaterials[0] || materials[0]
+
+      const updatedProject: Project = {
+        ...project,
+        name: projectName,
+        companyName: selectedCompany?.name || project.companyName,
+        companyId: selectedCompany?.companyId || project.companyId,
+        hallName: selectedHall?.name || project.hallName || "",
+        hallId: selectedHall?.hallId || project.hallId || "",
+        salesRep: salesRep,
+        createdAt: requestDate,
+        materialCount: Math.max(materials.length, 1),
+        category: firstMaterial?.category === "event" ? "イベント" : firstMaterial?.category === "option" ? "オプション" : firstMaterial?.category === "point" ? "ポイント" : project.category,
+        division: firstMaterial?.division === "line_ad" ? "LINE広告" : project.division,
+      }
+      onProjectUpdate(updatedProject)
+    }
+    onBack()
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -165,7 +190,7 @@ export function ProjectDetail({
       <div className="mx-auto max-w-6xl px-4 pt-8 pb-6">
         <div className="flex items-center gap-3">
           <button
-            onClick={onBack}
+            onClick={handleBackWithSave}
             className="text-muted-foreground hover:text-foreground transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />

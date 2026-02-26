@@ -35,8 +35,8 @@ export interface Project {
   status: ProjectStatus
   companyName: string
   companyId: string
-  hallName: string
-  hallId: string
+  hallName?: string
+  hallId?: string
   salesRep: string
   date: string
   location: string

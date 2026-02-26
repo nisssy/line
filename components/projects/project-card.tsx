@@ -58,16 +58,20 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <div className="flex items-center gap-2 text-sm">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-muted-foreground">ホール名:</span>
-                <span className="font-medium">{project.hallName}</span>
+            {project.hallName && (
+              <div className="space-y-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-muted-foreground">ホール名:</span>
+                  <span className="font-medium">{project.hallName}</span>
+                </div>
+                {project.hallId && (
+                  <div className="pl-6 text-xs text-muted-foreground">
+                    ホールID: {project.hallId}
+                  </div>
+                )}
               </div>
-              <div className="pl-6 text-xs text-muted-foreground">
-                ホールID: {project.hallId}
-              </div>
-            </div>
+            )}
 
             <div className="flex items-center gap-6 pt-2">
               <div className="flex items-center gap-2 text-sm">
@@ -119,7 +123,7 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-y-4 gap-x-8 text-sm">
             <div className="space-y-1">
               <div className="text-xs text-muted-foreground">案件NO: {project.code}</div>
-              <div className="font-medium">{project.hallName}</div>
+              <div className="font-medium">{project.hallName || project.companyName}</div>
             </div>
             
             <div className="hidden md:block"></div>

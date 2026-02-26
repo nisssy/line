@@ -37,9 +37,15 @@ export default function Home() {
     )
   }
 
+  const handleProjectUpdate = (updatedProject: Project) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === updatedProject.id ? updatedProject : p))
+    )
+  }
+
   if (viewMode === "detail" && selectedProjectId) {
     const selectedProject = projects.find(p => p.id === selectedProjectId)
-    return <ProjectDetail projectId={selectedProjectId} project={selectedProject} onBack={handleBack} onStatusChange={handleStatusChange} />
+    return <ProjectDetail projectId={selectedProjectId} project={selectedProject} onBack={handleBack} onStatusChange={handleStatusChange} onProjectUpdate={handleProjectUpdate} />
   }
 
   if (viewMode === "create") {
