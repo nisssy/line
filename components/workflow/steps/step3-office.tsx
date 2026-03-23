@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { FileUpload } from "@/components/workflow/file-upload"
 import { ReportPreviewModal } from "@/components/workflow/report-preview-modal"
 import type { IntermediateReport } from "@/types/workflow"
-import { BarChart3, FileText, Plus, Save, Database } from "lucide-react"
+import { BarChart3, FileText, Plus, Save, Database, AlertCircle } from "lucide-react"
 
 interface Step3OfficeProps {
   intermediateReports: IntermediateReport[]
@@ -22,6 +22,7 @@ interface Step3OfficeProps {
   onSaveFinalReport: () => void
   onLoadSampleIntermediateReport: (reportId: string, fileName: string) => void
   onLoadSampleFinalReport: (fileName: string) => void
+  isPublicationPeriod?: boolean
 }
 
 export function Step3Office({
@@ -34,6 +35,7 @@ export function Step3Office({
   onSaveFinalReport,
   onLoadSampleIntermediateReport,
   onLoadSampleFinalReport,
+  isPublicationPeriod = false,
 }: Step3OfficeProps) {
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({})
   const [savedFiles, setSavedFiles] = useState<Record<string, boolean>>({})
@@ -147,32 +149,43 @@ export function Step3Office({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-foreground">広告実績レポートのアップロード</p>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleLoadSampleFinal}
-                className="h-7 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <Database className="mr-1 h-3 w-3" />
-                サンプル
-              </Button>
+          {isPublicationPeriod ? (
+            <div className="flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <AlertCircle className="h-5 w-5 text-amber-600 flex-shrink-0" />
+              <p className="text-sm text-amber-700">
+                掲載期間中のため、最終報告のアップロードはできません。掲載期間終了後にアップロードしてください。
+              </p>
             </div>
-            <FileUpload
-              onFileSelect={handleUploadFinal}
-              fileName={finalFileName}
-              saved={finalSaved || finalReport?.saved}
-              onFileClick={openFinalPreview}
-            />
-          </div>
-          <div className="flex justify-end">
-            <Button onClick={handleSaveFinal} disabled={!finalFileName}>
-              <Save className="mr-2 h-4 w-4" />
-              保存
-            </Button>
-          </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">広告実績レポートのアップロード</p>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleLoadSampleFinal}
+                    className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    <Database className="mr-1 h-3 w-3" />
+                    サンプル
+                  </Button>
+                </div>
+                <FileUpload
+                  onFileSelect={handleUploadFinal}
+                  fileName={finalFileName}
+                  saved={finalSaved || finalReport?.saved}
+                  onFileClick={openFinalPreview}
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={handleSaveFinal} disabled={!finalFileName}>
+                  <Save className="mr-2 h-4 w-4" />
+                  保存
+                </Button>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
 

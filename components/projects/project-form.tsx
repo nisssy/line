@@ -10,7 +10,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
-import type { Project, CompanyData, HallData } from "@/types/workflow"
+import type { Project, CompanyData, HallData, RecordData } from "@/types/workflow"
 import {
   MaterialInfoForm,
   createDefaultMaterial,
@@ -23,7 +23,7 @@ import { Badge } from "@/components/ui/badge"
 
 interface ProjectFormProps {
   onBack: () => void
-  onSubmit: (project: Project) => void
+  onSubmit: (project: Project, records: RecordData[]) => void
 }
 
 const CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
@@ -76,17 +76,20 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
     if (!selectedCompany || !projectName.trim() || !requestDate) return
 
     const confirmedMaterials = materials.filter((m) => m.isConfirmed)
-    if (confirmedMaterials.length === 0) return
     const firstMaterial = confirmedMaterials[0]
 
     const resolvedSalesRep = salesRep || selectedHall?.salesPersonName || ""
     if (!resolvedSalesRep) return
 
+    const projectId = `new-${Date.now()}`
+    const projectCode = `PJ-${String(Math.floor(Math.random() * 900) + 100).padStart(3, "0")}`
+
     const newProject: Project = {
-      id: `new-${Date.now()}`,
-      code: `P${String(Math.floor(Math.random() * 900) + 100).padStart(3, "0")}`,
+      id: projectId,
+      code: projectCode,
       name: projectName,
       status: "pending",
+      detailStatus: "proposing",
       companyName: selectedCompany.name,
       companyId: selectedCompany.companyId,
       hallName: selectedHall?.name,
@@ -96,21 +99,49 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
       location: selectedHall?.address || "",
       budget: 0,
       createdAt: new Date().toISOString().split("T")[0],
-      materialCount: Math.max(confirmedMaterials.length, 1),
+      materialCount: confirmedMaterials.length,
       category: firstMaterial?.category === "event" ? "イベント" : firstMaterial?.category === "option" ? "オプション" : firstMaterial?.category === "point" ? "ポイント" : undefined,
       division: firstMaterial?.division === "line_ad" ? "LINE広告" : undefined,
     }
 
-    onSubmit(newProject)
+    // 確定済み商材からレコードを生成
+    const newRecords: RecordData[] = confirmedMaterials.map((m, idx) => {
+      const recordNum = 13800 + Date.now() % 1000 + idx
+      const categoryLabel = m.category === "event" ? "イベント" : m.category === "option" ? "オプション" : m.category === "point" ? "ポイント" : m.category
+      const materialNameLabel = m.division === "line_ad" ? "LINE広告" : m.division
+      return {
+        id: `r-${Date.now()}-${idx}`,
+        recordNumber: String(recordNum),
+        recordTitle: `レコードNo.${recordNum}`,
+        projectId: projectId,
+        projectNumber: projectCode,
+        status: "office_applying" as const,
+        statusLabel: "[事務] 申請中",
+        orderDate: requestDate,
+        storeCode: selectedHall?.hallId || "",
+        storeName: selectedHall?.name || selectedCompany.name,
+        publicationStartDate: "",
+        publicationEndDate: "",
+        publicationDays: 1,
+        netAmount: m.usageMethod === "single" ? Number(m.billingAmount || 0) : 0,
+        dailyBudget: 0,
+        deliveryArea: selectedHall?.address || "",
+        target: "この地域に住んでいる人",
+        materialCategory: categoryLabel,
+        materialName: materialNameLabel,
+        campaignObjective: "ウェブサイトアクセス",
+        billingMethod: "CPC",
+      }
+    })
+
+    onSubmit(newProject, newRecords)
   }
 
-  const hasConfirmedMaterial = materials.some((m) => m.isConfirmed)
   const isValid =
     !!selectedCompany &&
     !!projectName.trim() &&
     !!(salesRep || selectedHall?.salesPersonName) &&
-    !!requestDate &&
-    hasConfirmedMaterial
+    !!requestDate
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -263,7 +294,7 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
               <CardContent className="p-6">
                 <CollapsibleTrigger className="flex items-center justify-between w-full">
                   <h2 className="text-base font-bold text-foreground">
-                    商材情報{toCircledNumber(index + 1)} <span className="text-destructive text-sm">*</span>
+                    商材情報{toCircledNumber(index + 1)}
                   </h2>
                   <div className="flex items-center gap-2">
                     {materials.length > 1 && (

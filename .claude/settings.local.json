@@ -6,7 +6,11 @@
       "Bash(./node_modules/.bin/next build:*)",
       "Bash(ls:*)",
       "Bash(bun install:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(find /Users/nishikawakazuhiro/WhiteHatAI/オーガイ/line/components -maxdepth 3 -type f -name *.tsx)",
+      "Bash(npm install:*)",
+      "Bash(git checkout:*)",
+      "Bash(NEXT_TURBOPACK=0 npx next build)"
     ]
   }
 }

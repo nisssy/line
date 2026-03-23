@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,7 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
-import { Calendar, Check } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { cn } from "@/lib/utils"
+import { Calendar, Check, ChevronsUpDown } from "lucide-react"
+import { MATERIAL_NAME_OPTIONS } from "@/types/workflow"
 
 // ===== Types =====
 
@@ -72,10 +77,78 @@ function getCategoryLabel(category: string): string {
 }
 
 function getDivisionLabel(division: string): string {
+  // divisionは商材名として扱う
+  if (MATERIAL_NAME_OPTIONS.includes(division)) return division
   switch (division) {
     case "line_ad": return "LINE広告"
     default: return division
   }
+}
+
+function MaterialNameCombobox({ value, onChange, disabled }: { value: string; onChange: (v: string) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState("")
+  const filtered = useMemo(() => {
+    if (!query) return MATERIAL_NAME_OPTIONS
+    return MATERIAL_NAME_OPTIONS.filter(n => n.includes(query))
+  }, [query])
+
+  const displayValue = value === "line_ad" ? "LINE広告" : (MATERIAL_NAME_OPTIONS.includes(value) ? value : value || "")
+
+  return (
+    <div className="space-y-1.5">
+      <Label className="text-sm text-muted-foreground">商材名</Label>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            disabled={disabled}
+            className={cn("w-full justify-between font-normal bg-white", !value && "text-muted-foreground")}
+          >
+            {displayValue || "商材名を選択..."}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[280px] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput placeholder="商材名を入力..." value={query} onValueChange={setQuery} />
+            <CommandList>
+              <CommandEmpty>該当なし</CommandEmpty>
+              <CommandGroup>
+                {query && !MATERIAL_NAME_OPTIONS.includes(query) && (
+                  <CommandItem
+                    value={query}
+                    onSelect={() => {
+                      onChange(query)
+                      setQuery("")
+                      setOpen(false)
+                    }}
+                  >
+                    「{query}」を使用
+                  </CommandItem>
+                )}
+                {filtered.map((name) => (
+                  <CommandItem
+                    key={name}
+                    value={name}
+                    onSelect={() => {
+                      onChange(name === "LINE広告" ? "line_ad" : name)
+                      setQuery("")
+                      setOpen(false)
+                    }}
+                  >
+                    <Check className={cn("mr-2 h-4 w-4", (value === name || (value === "line_ad" && name === "LINE広告")) ? "opacity-100" : "opacity-0")} />
+                    {name}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    </div>
+  )
 }
 
 export function MaterialInfoForm({
@@ -139,7 +212,7 @@ export function MaterialInfoForm({
   }
 
   const canConfirm =
-    (data.usageMethod === "single" && !!data.billingAmount.trim()) ||
+    data.usageMethod === "single" ||
     (data.usageMethod === "anniversary_pack" && !!data.selectedPackId)
 
   // ===== 確定済み → サマリー表示 =====
@@ -156,10 +229,10 @@ export function MaterialInfoForm({
         <div className="space-y-3">
           <div className="flex flex-wrap gap-2">
             <Badge variant="secondary" className="text-xs font-normal">
-              カテゴリ: {getCategoryLabel(data.category)}
+              商材区分: {getCategoryLabel(data.category)}
             </Badge>
             <Badge variant="secondary" className="text-xs font-normal">
-              区分: {getDivisionLabel(data.division)}
+              商材名: {getDivisionLabel(data.division)}
             </Badge>
             <Badge variant="secondary" className="text-xs font-normal">
               {data.usageMethod === "anniversary_pack"
@@ -205,13 +278,13 @@ export function MaterialInfoForm({
         基本情報
       </h3>
       <div className="space-y-5">
-        {/* カテゴリ / イベント区分 */}
+        {/* 商材区分 / 商材名 */}
         <div className="grid grid-cols-2 gap-6">
           <div className="space-y-1.5">
-            <Label className="text-sm text-muted-foreground">カテゴリ</Label>
+            <Label className="text-sm text-muted-foreground">商材区分</Label>
             <Select value={data.category} onValueChange={handleCategoryChange}>
               <SelectTrigger className="bg-white">
-                <SelectValue placeholder="カテゴリを選択" />
+                <SelectValue placeholder="商材区分を選択" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="event">イベント</SelectItem>
@@ -220,21 +293,11 @@ export function MaterialInfoForm({
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-sm text-muted-foreground">イベント区分</Label>
-            <Select
-              value={data.division}
-              onValueChange={handleDivisionChange}
-              disabled={!data.category}
-            >
-              <SelectTrigger className="bg-white">
-                <SelectValue placeholder="区分を選択" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="line_ad">LINE広告</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <MaterialNameCombobox
+            value={data.division}
+            onChange={handleDivisionChange}
+            disabled={!data.category}
+          />
         </div>
 
         {/* 利用方法 */}
@@ -326,24 +389,8 @@ export function MaterialInfoForm({
                 />
                 <span className="text-sm font-medium">単発で実施</span>
               </label>
-            </RadioGroup>
 
-            {/* 単発で実施の場合の請求額入力 */}
-            {data.usageMethod === "single" && (
-              <div className="space-y-1.5">
-                <Label className="text-sm text-muted-foreground">請求額</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">¥</span>
-                  <Input
-                    type="number"
-                    value={data.billingAmount}
-                    onChange={(e) => onChange({ billingAmount: e.target.value })}
-                    placeholder="0"
-                    className="bg-white pl-7"
-                  />
-                </div>
-              </div>
-            )}
+            </RadioGroup>
 
             {/* 商材追加するボタン */}
             <div className="pt-2 flex justify-end">

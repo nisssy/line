@@ -28,11 +28,24 @@ export type UserRole = "sales" | "office"
 
 export type ProjectStatus = "confirmed" | "in_progress" | "pending" | "completed" | "preparing" | "skipped"
 
+// 案件詳細画面のステータス（提案中、進行中、完了）
+export type ProjectDetailStatus = "proposing" | "in_progress" | "completed"
+
+// レコードのステータス
+export type RecordStatus =
+  | "office_applying"      // [事務] 申請中
+  | "office_approved"      // [事務] 事務承認
+  | "agency_pending"       // [代理店様] 受領待ち
+  | "agency_reviewing"     // [代理店様] 審査中
+  | "in_progress"          // 進行中
+  | "completed"            // 完了
+
 export interface Project {
   id: string
   code: string
   name: string
   status: ProjectStatus
+  detailStatus: ProjectDetailStatus
   companyName: string
   companyId: string
   hallName?: string
@@ -45,6 +58,62 @@ export interface Project {
   materialCount: number
   category?: string
   division?: string
+  area?: string
+}
+
+// 商材名の選択肢
+export const MATERIAL_NAME_OPTIONS = [
+  "トリニティガール",
+  "合同抽選会",
+  "LINE広告",
+  "お知らせバナー",
+  "メインバナー",
+]
+
+// レコード（フラット化されたデータ）
+export interface RecordData {
+  id: string
+  recordNumber: string
+  recordTitle: string
+  projectId: string
+  projectNumber: string
+  status: RecordStatus
+  statusLabel: string
+  orderDate: string
+  storeCode: string
+  storeName: string
+  publicationStartDate: string
+  publicationEndDate: string
+  publicationDays: number
+  netAmount: number
+  dailyBudget: number
+  deliveryArea: string
+  target: string
+  materialCategory: string
+  materialName: string
+  campaignObjective?: string
+  billingMethod?: string
+}
+
+// 保存された検索条件
+export interface SavedSearchCondition {
+  id: string
+  name: string
+  conditions: {
+    company?: string
+    hall?: string
+    materialCategory?: string
+    materialName?: string
+    area?: string
+    statuses?: string[]
+    projectNumber?: string
+    recordNumber?: string
+    projectName?: string
+    salesRep?: string
+    dateFrom?: string
+    dateTo?: string
+  }
+  createdAt: string
 }
 
 export type Step1Status =

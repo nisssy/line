@@ -62,6 +62,16 @@ const initialState: WorkflowState = {
 export function WorkflowContainer({ role, embedded = false, onStatusChange, renderChatPanel = false, materialName, materialUsageMethod, materialSelectedPackId, materialSelectedPackTitle }: WorkflowContainerProps) {
   const [state, setState] = useState<WorkflowState>(initialState)
 
+  const isPublicationPeriod = (() => {
+    const { startDate, endDate } = state.basicInfo
+    if (!startDate || !endDate) return false
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const start = new Date(startDate)
+    const end = new Date(endDate)
+    return today >= start && today <= end
+  })()
+
   const completedSteps: WorkflowStep[] = []
   if (state.step1Status === "approved") {
     completedSteps.push(1)
@@ -412,6 +422,7 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
             onSaveFinalReport={handleSaveFinalReport}
             onLoadSampleIntermediateReport={handleLoadSampleIntermediateReport}
             onLoadSampleFinalReport={handleLoadSampleFinalReport}
+            isPublicationPeriod={isPublicationPeriod}
           />
         )}
       </div>
