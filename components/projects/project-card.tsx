@@ -144,7 +144,7 @@ export function ProjectCard({ project, onViewDetail }: ProjectCardProps) {
             </div>
 
             <div className="space-y-1">
-              <div className="text-xs text-muted-foreground">イベント区分</div>
+              <div className="text-xs text-muted-foreground">商材名</div>
               <div className="font-medium">{project.division || "—"}</div>
             </div>
 

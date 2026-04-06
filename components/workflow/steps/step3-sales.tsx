@@ -18,6 +18,7 @@ interface Step3SalesProps {
   }
   onSendIntermediateReport: (reportId: string, content: string) => void
   onSendFinalReport: (content: string) => void
+  finalReportOnly?: boolean
 }
 
 export function Step3Sales({
@@ -25,6 +26,7 @@ export function Step3Sales({
   finalReport,
   onSendIntermediateReport,
   onSendFinalReport,
+  finalReportOnly = false,
 }: Step3SalesProps) {
   const [previewModal, setPreviewModal] = useState<{
     open: boolean
@@ -50,8 +52,8 @@ export function Step3Sales({
 
   return (
     <div className="space-y-6">
-      {/* 中間報告 */}
-      {intermediateReports.map((report, index) => (
+      {/* 中間報告（finalReportOnlyの場合は非表示） */}
+      {!finalReportOnly && intermediateReports.map((report, index) => (
         <Card key={report.id}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -91,8 +93,8 @@ LINE広告の運用状況につきまして、中間報告をお送りいたし�
         </Card>
       ))}
 
-      {/* 中間報告がない場合 */}
-      {intermediateReports.length === 0 && (
+      {/* 中間報告がない場合（finalReportOnlyの場合は非表示） */}
+      {!finalReportOnly && intermediateReports.length === 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">

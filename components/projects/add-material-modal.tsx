@@ -204,9 +204,9 @@ export function AddMaterialModal({
                 </Select>
               </div>
 
-              {/* イベント区分 */}
+              {/* 商材名 */}
               <div className="space-y-1.5">
-                <Label className="text-sm font-bold">イベント区分</Label>
+                <Label className="text-sm font-bold">商材名</Label>
                 <Select value={filterDivision} onValueChange={setFilterDivision}>
                   <SelectTrigger className="h-9">
                     <SelectValue placeholder="すべて" />

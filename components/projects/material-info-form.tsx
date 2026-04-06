@@ -405,7 +405,7 @@ export function MaterialInfoForm({
         {!showUsageMethod && (
           <div className="rounded-lg bg-gray-50 border border-gray-200 p-4">
             <p className="text-sm text-muted-foreground">
-              カテゴリとイベント区分を選択してください。選択後に利用方法の選択が表示されます。
+              カテゴリと商材名を選択してください。選択後に利用方法の選択が表示されます。
             </p>
           </div>
         )}

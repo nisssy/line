@@ -54,6 +54,7 @@ const detailStatusConfig: Record<ProjectDetailStatus, { label: string; className
 
 function getRecordStatusBadgeClass(status: string): string {
   switch (status) {
+    case "pre_proposal": return "bg-orange-100 text-orange-800 border-orange-200"
     case "office_applying": return "bg-blue-100 text-blue-800 border-blue-200"
     case "office_approved": return "bg-teal-100 text-teal-800 border-teal-200"
     case "agency_pending": return "bg-yellow-100 text-yellow-800 border-yellow-200"
@@ -303,65 +304,61 @@ export function ProjectDetail({
                 </div>
 
                 {projectRecords.length > 0 ? (
-                  <div className="space-y-4">
-                    {projectRecords.map((record, index) => (
-                      <div
-                        key={record.id}
-                        className="rounded-lg border bg-white p-5 hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => onSelectRecord(record.id)}
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Badge variant="secondary" className="text-xs bg-primary/10 text-primary border-primary/20">
-                                {record.materialCategory}
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-gray-50">
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap w-6"></th>
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">ステータス</th>
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">レコード番号</th>
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">商材名</th>
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">店舗名</th>
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">掲載開始日</th>
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">掲載終了日</th>
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">実NET額</th>
+                          <th className="px-3 py-2.5 text-left font-medium text-muted-foreground whitespace-nowrap">日予算</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {projectRecords.map((record) => (
+                          <tr
+                            key={record.id}
+                            className="border-b hover:bg-gray-50/50 transition-colors cursor-pointer"
+                            onClick={() => onSelectRecord(record.id)}
+                          >
+                            <td className="px-3 py-2.5">
+                              <div className={`h-2.5 w-2.5 rounded-sm ${
+                                record.status === "office_applying" ? "bg-blue-500" :
+                                record.status === "office_approved" ? "bg-teal-500" :
+                                record.status === "agency_pending" ? "bg-yellow-500" :
+                                record.status === "agency_reviewing" ? "bg-purple-500" :
+                                record.status === "in_progress" ? "bg-green-500" :
+                                record.status === "completed" ? "bg-gray-500" : "bg-gray-500"
+                              }`} />
+                            </td>
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              <Badge variant="outline" className={`text-xs ${getRecordStatusBadgeClass(record.status)}`}>
+                                {record.statusLabel}
                               </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {record.materialName}
-                              </Badge>
-                            </div>
-                            <h3 className="font-medium text-base">
-                              {record.materialName} {project?.name?.includes("GW") ? "GW特別イベント" : "配信"}
-                            </h3>
-                            <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1">
-                              <Calendar className="h-3 w-3" />
-                              {record.publicationStartDate}
-                            </div>
-                          </div>
-                          <Badge variant="outline" className={getRecordStatusBadgeClass(record.status)}>
-                            {record.statusLabel}
-                          </Badge>
-                        </div>
-
-                        <Separator className="my-3" />
-
-                        <div className="grid grid-cols-2 gap-3 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">提案:</span>
-                            <Badge variant="outline" className="ml-2 text-xs bg-green-50 text-green-700 border-green-200">受注済み</Badge>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">実施:</span>
-                            <Badge variant="outline" className="ml-2 text-xs">
-                              {record.status === "completed" ? "終了" : "進行中"}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        <Separator className="my-3" />
-
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-xs text-muted-foreground">見積金額</div>
-                            <div className="text-lg font-bold">¥{record.netAmount.toLocaleString()}</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-xs text-muted-foreground">担当営業</div>
-                            <div className="text-sm font-medium text-primary">{project?.salesRep}</div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              <button
+                                className="text-primary hover:underline font-medium text-sm"
+                                onClick={(e) => { e.stopPropagation(); onSelectRecord(record.id) }}
+                              >
+                                {record.recordNumber}
+                              </button>
+                            </td>
+                            <td className="px-3 py-2.5 whitespace-nowrap text-sm">{record.materialName}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap text-sm">{record.storeName}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap text-sm">{record.publicationStartDate}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap text-sm">{record.publicationEndDate}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap text-sm">¥{record.netAmount.toLocaleString()}</td>
+                            <td className="px-3 py-2.5 whitespace-nowrap text-sm">¥{record.dailyBudget.toLocaleString()}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">

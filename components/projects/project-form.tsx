@@ -24,6 +24,8 @@ import { Badge } from "@/components/ui/badge"
 interface ProjectFormProps {
   onBack: () => void
   onSubmit: (project: Project, records: RecordData[]) => void
+  initialCompany?: CompanyData | null
+  initialHall?: HallData | null
 }
 
 const CIRCLED_NUMBERS = ["①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩"]
@@ -32,11 +34,43 @@ function toCircledNumber(n: number): string {
   return CIRCLED_NUMBERS[n - 1] || `(${n})`
 }
 
-export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
-  const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(null)
-  const [selectedHall, setSelectedHall] = useState<HallData | null>(null)
-  const [projectName, setProjectName] = useState("")
-  const [salesRep, setSalesRep] = useState("")
+export function ProjectForm({ onBack, onSubmit, initialCompany, initialHall }: ProjectFormProps) {
+  const [selectedCompany, setSelectedCompany] = useState<CompanyData | null>(initialCompany ?? null)
+  const [selectedHall, setSelectedHall] = useState<HallData | null>(initialHall ?? null)
+  const [projectName, setProjectName] = useState(() => {
+    const hallName = initialHall?.name || ""
+    const rep = initialHall?.salesPersonName || ""
+    if (hallName && rep) return `${hallName} - ${rep}`
+    if (hallName) return hallName
+    return ""
+  })
+  const [projectNameManuallyEdited, setProjectNameManuallyEdited] = useState(false)
+  const [salesRep, setSalesRep] = useState(initialHall?.salesPersonName || "")
+
+  const generateProjectName = (hall: HallData | null, rep: string) => {
+    if (projectNameManuallyEdited) return
+    const hallName = hall?.name || ""
+    const repName = rep || hall?.salesPersonName || ""
+    if (hallName && repName) {
+      setProjectName(`${hallName} - ${repName}`)
+    } else if (hallName) {
+      setProjectName(hallName)
+    }
+  }
+
+  const handleSelectCompany = (company: CompanyData | null) => {
+    setSelectedCompany(company)
+  }
+
+  const handleSelectHall = (hall: HallData | null) => {
+    setSelectedHall(hall)
+    generateProjectName(hall, salesRep)
+  }
+
+  const handleSalesRepChange = (value: string) => {
+    setSalesRep(value)
+    generateProjectName(selectedHall, value)
+  }
   const [requestDate, setRequestDate] = useState(
     new Date().toISOString().split("T")[0]
   )
@@ -200,8 +234,8 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
                 <CompanyHallCombobox
                   selectedCompany={selectedCompany}
                   selectedHall={selectedHall}
-                  onSelectCompany={setSelectedCompany}
-                  onSelectHall={setSelectedHall}
+                  onSelectCompany={handleSelectCompany}
+                  onSelectHall={handleSelectHall}
                 />
               </div>
 
@@ -253,7 +287,10 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
                 <Label className="text-sm text-muted-foreground">案件名 <span className="text-destructive">*</span></Label>
                 <Input
                   value={projectName}
-                  onChange={(e) => setProjectName(e.target.value)}
+                  onChange={(e) => {
+                    setProjectName(e.target.value)
+                    setProjectNameManuallyEdited(true)
+                  }}
                   placeholder="例: マルハン渋谷店 - 山田 太郎"
                   className="bg-white"
                 />
@@ -265,7 +302,7 @@ export function ProjectForm({ onBack, onSubmit }: ProjectFormProps) {
                   <Label className="text-sm text-muted-foreground">ホール担当営業 <span className="text-destructive">*</span></Label>
                   <Input
                     value={salesRep || selectedHall?.salesPersonName || ""}
-                    onChange={(e) => setSalesRep(e.target.value)}
+                    onChange={(e) => handleSalesRepChange(e.target.value)}
                     placeholder="例: 山田 太郎"
                     className="bg-white"
                   />

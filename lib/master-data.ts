@@ -118,6 +118,37 @@ const generateInitialHalls = (): HallData[] => {
 
 export const initialHalls: HallData[] = generateInitialHalls()
 
+// --- 部マスタ ---
+export const DEPARTMENT_OPTIONS = [
+  "営業部",
+  "管理部",
+  "経理部",
+  "企画部",
+  "マーケティング部",
+]
+
+// --- エリアマスタ ---
+export const AREA_OPTIONS = [
+  "東京本社①",
+  "東京本社②",
+  "関東①",
+  "関東②",
+  "関東③",
+  "大手法人",
+  "関西",
+  "中部",
+  "九州",
+  "東北",
+  "北海道",
+]
+
+// --- 商品カテゴリマスタ ---
+export const MATERIAL_CATEGORY_OPTIONS = [
+  "イベント",
+  "オプション",
+  "ポイント",
+]
+
 // --- 検索ロジック ---
 
 export function searchHalls(halls: HallData[], query: string, companyId?: number): HallData[] {

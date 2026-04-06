@@ -33,6 +33,7 @@ export type ProjectDetailStatus = "proposing" | "in_progress" | "completed"
 
 // レコードのステータス
 export type RecordStatus =
+  | "pre_proposal"         // 提案前
   | "office_applying"      // [事務] 申請中
   | "office_approved"      // [事務] 事務承認
   | "agency_pending"       // [代理店様] 受領待ち
@@ -59,15 +60,12 @@ export interface Project {
   category?: string
   division?: string
   area?: string
+  department?: string
 }
 
 // 商材名の選択肢
 export const MATERIAL_NAME_OPTIONS = [
-  "トリニティガール",
-  "合同抽選会",
   "LINE広告",
-  "お知らせバナー",
-  "メインバナー",
 ]
 
 // レコード（フラット化されたデータ）
@@ -102,11 +100,14 @@ export interface SavedSearchCondition {
   conditions: {
     company?: string
     hall?: string
+    department?: string
+    area?: string
+    departmentArea?: string
     materialCategory?: string
     materialName?: string
-    area?: string
     statuses?: string[]
     projectNumber?: string
+    projectCode?: string
     recordNumber?: string
     projectName?: string
     salesRep?: string

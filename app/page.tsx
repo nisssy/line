@@ -6,7 +6,7 @@ import { ProjectDetail } from "@/components/projects/project-detail"
 import { ProjectForm } from "@/components/projects/project-form"
 import { RecordDetail } from "@/components/projects/record-detail"
 import { AddMaterialModal } from "@/components/projects/add-material-modal"
-import type { Project, ProjectStatus, RecordData } from "@/types/workflow"
+import type { Project, ProjectStatus, RecordData, CompanyData, HallData } from "@/types/workflow"
 
 type ViewMode = "list" | "detail" | "create" | "record_detail"
 
@@ -18,6 +18,8 @@ export default function Home() {
   const [records, setRecords] = useState<RecordData[]>(sampleRecords)
   const [addMaterialOpen, setAddMaterialOpen] = useState(false)
   const [addMaterialProjectId, setAddMaterialProjectId] = useState<string | undefined>()
+  const [searchCompanyForCreate, setSearchCompanyForCreate] = useState<CompanyData | null>(null)
+  const [searchHallForCreate, setSearchHallForCreate] = useState<HallData | null>(null)
 
   const handleSelectProject = (projectId: string) => {
     setSelectedProjectId(projectId)
@@ -130,6 +132,9 @@ export default function Home() {
           record={selectedRecord}
           project={parentProject}
           onBack={handleBackFromRecord}
+          onRecordUpdate={(updatedRecord) => {
+            setRecords(prev => prev.map(r => r.id === updatedRecord.id ? updatedRecord : r))
+          }}
         />
       )
     }
@@ -165,7 +170,14 @@ export default function Home() {
   }
 
   if (viewMode === "create") {
-    return <ProjectForm onBack={handleBack} onSubmit={handleCreateProject} />
+    return (
+      <ProjectForm
+        onBack={handleBack}
+        onSubmit={handleCreateProject}
+        initialCompany={searchCompanyForCreate}
+        initialHall={searchHallForCreate}
+      />
+    )
   }
 
   return (
@@ -173,10 +185,19 @@ export default function Home() {
       <ProjectList
         onSelectProject={handleSelectProject}
         onSelectRecord={handleSelectRecord}
-        onCreateProject={() => setViewMode("create")}
+        onCreateProject={(searchContext) => {
+          setSearchCompanyForCreate(searchContext?.company ?? null)
+          setSearchHallForCreate(searchContext?.hall ?? null)
+          setViewMode("create")
+        }}
         onAddMaterial={handleOpenAddMaterial}
         projects={projects}
         records={records}
+        onDuplicateRecords={(newRecords, projectId) => {
+          setRecords(prev => [...newRecords, ...prev])
+          setSelectedProjectId(projectId)
+          setViewMode("detail")
+        }}
       />
       <AddMaterialModal
         open={addMaterialOpen}

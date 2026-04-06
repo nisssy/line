@@ -4,23 +4,35 @@ import { Check } from "lucide-react"
 import { cn } from "@/lib/utils"
 import type { WorkflowStep } from "@/types/workflow"
 
+interface StepConfig {
+  step: number
+  label: string
+}
+
 interface StepperProps {
   currentStep: WorkflowStep
   completedSteps: WorkflowStep[]
   onStepClick?: (step: WorkflowStep) => void
+  steps?: StepConfig[]
 }
 
-const steps = [
+const defaultSteps: StepConfig[] = [
   { step: 1, label: "基本情報登録" },
   { step: 2, label: "LINE広告アカウント登録" },
   { step: 3, label: "配信レポート作成" },
 ]
 
-export function Stepper({ currentStep, completedSteps, onStepClick }: StepperProps) {
+export const twoStepConfig: StepConfig[] = [
+  { step: 1, label: "基本情報登録" },
+  { step: 2, label: "配信レポート作成" },
+]
+
+export function Stepper({ currentStep, completedSteps, onStepClick, steps }: StepperProps) {
+  const stepsToRender = steps || defaultSteps
   return (
     <div className="w-full py-6">
       <div className="flex items-center justify-center">
-        {steps.map((step, index) => (
+        {stepsToRender.map((step, index) => (
           <div key={step.step} className="flex items-center">
             <button
               type="button"
@@ -55,7 +67,7 @@ export function Stepper({ currentStep, completedSteps, onStepClick }: StepperPro
                 {step.label}
               </span>
             </button>
-            {index < steps.length - 1 && (
+            {index < stepsToRender.length - 1 && (
               <div
                 className={cn(
                   "mx-4 h-0.5 w-16 lg:w-24",

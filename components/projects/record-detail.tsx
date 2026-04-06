@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { WorkflowContainer } from "@/components/workflow/workflow-container"
-import { Stepper } from "@/components/workflow/stepper"
+import { Stepper, twoStepConfig } from "@/components/workflow/stepper"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -22,16 +22,19 @@ import {
   ArrowRightLeft,
   FileText,
   ChevronDown,
+  Save,
 } from "lucide-react"
 
 interface RecordDetailProps {
   record: RecordData
   project?: Project
   onBack: () => void
+  onRecordUpdate?: (updatedRecord: RecordData) => void
 }
 
 function getStatusBadgeClass(status: string): string {
   switch (status) {
+    case "pre_proposal": return "bg-orange-100 text-orange-800 border-orange-200"
     case "office_applying": return "bg-blue-100 text-blue-800 border-blue-200"
     case "office_approved": return "bg-teal-100 text-teal-800 border-teal-200"
     case "agency_pending": return "bg-yellow-100 text-yellow-800 border-yellow-200"
@@ -42,11 +45,45 @@ function getStatusBadgeClass(status: string): string {
   }
 }
 
-export function RecordDetail({ record, project, onBack }: RecordDetailProps) {
+export function RecordDetail({ record, project, onBack, onRecordUpdate }: RecordDetailProps) {
   const [role, setRole] = useState<UserRole>("sales")
   const [applicationInfoOpen, setApplicationInfoOpen] = useState(false)
   const [currentStep, setCurrentStep] = useState<WorkflowStep>(1)
   const completedSteps: WorkflowStep[] = []
+
+  // 編集用ローカルステート
+  const [editData, setEditData] = useState({
+    recordNumber: record.recordNumber,
+    orderDate: record.orderDate || "",
+    storeCode: record.storeCode,
+    storeName: record.storeName,
+    publicationStartDate: record.publicationStartDate,
+    publicationEndDate: record.publicationEndDate,
+    publicationDays: record.publicationDays,
+    netAmount: record.netAmount,
+    dailyBudget: record.dailyBudget,
+    deliveryArea: record.deliveryArea,
+    target: record.target,
+    materialCategory: record.materialCategory,
+    materialName: record.materialName,
+    campaignObjective: record.campaignObjective || "",
+    billingMethod: record.billingMethod || "",
+  })
+  const [hasChanges, setHasChanges] = useState(false)
+
+  const updateField = (field: string, value: string | number) => {
+    setEditData(prev => ({ ...prev, [field]: value }))
+    setHasChanges(true)
+  }
+
+  const handleSave = () => {
+    if (!onRecordUpdate) return
+    onRecordUpdate({
+      ...record,
+      ...editData,
+    })
+    setHasChanges(false)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -111,6 +148,16 @@ export function RecordDetail({ record, project, onBack }: RecordDetailProps) {
               <Badge variant="outline" className={getStatusBadgeClass(record.status)}>
                 {record.statusLabel}
               </Badge>
+              {hasChanges && (
+                <Button
+                  size="sm"
+                  onClick={handleSave}
+                  className="gap-1.5"
+                >
+                  <Save className="h-3.5 w-3.5" />
+                  保存
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"
@@ -121,11 +168,12 @@ export function RecordDetail({ record, project, onBack }: RecordDetailProps) {
               </Button>
             </div>
           </div>
-          {/* ステッパー */}
+          {/* ステッパー（2ステップ: 基本情報登録→配信レポート作成） */}
           <Stepper
             currentStep={currentStep}
             completedSteps={completedSteps}
             onStepClick={setCurrentStep}
+            steps={twoStepConfig}
           />
         </div>
       </div>
@@ -162,24 +210,37 @@ export function RecordDetail({ record, project, onBack }: RecordDetailProps) {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">レコード番号</Label>
-              <Input value={record.recordNumber} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={editData.recordNumber}
+                onChange={(e) => updateField("recordNumber", e.target.value)}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">営業申込日</Label>
-              <Input value={project?.createdAt || ""} readOnly disabled className="bg-gray-50" />
+              <Input
+                type="date"
+                value={project?.createdAt || ""}
+                onChange={() => {}}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">発注日</Label>
-              <Input value={record.orderDate || ""} readOnly disabled className="bg-gray-50" />
+              <Input
+                type="date"
+                value={editData.orderDate}
+                onChange={(e) => updateField("orderDate", e.target.value)}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">獲得者</Label>
-              <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-gray-50">
-                <div className="h-5 w-5 rounded-full bg-primary/20 flex items-center justify-center">
-                  <span className="text-[10px] text-primary">👤</span>
-                </div>
-                <span className="text-sm text-primary">{project?.salesRep || "—"}</span>
-              </div>
+              <Input
+                value={project?.salesRep || ""}
+                onChange={() => {}}
+                className="bg-white"
+              />
             </div>
           </div>
 
@@ -188,38 +249,64 @@ export function RecordDetail({ record, project, onBack }: RecordDetailProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">店舗コード</Label>
-              <div className="h-10 px-3 border rounded-md bg-gray-50 flex items-center">
-                <span className="text-sm text-primary">{record.storeCode}</span>
-              </div>
+              <Input
+                value={editData.storeCode}
+                onChange={(e) => updateField("storeCode", e.target.value)}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">店舗名</Label>
-              <Input value={record.storeName} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={editData.storeName}
+                onChange={(e) => updateField("storeName", e.target.value)}
+                className="bg-white"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">都道府県</Label>
-              <Input value={project?.location?.split("県")[0] ? project.location.split("市")[0] : "—"} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={project?.location?.split("県")[0] ? project.location.split("市")[0] : ""}
+                onChange={() => {}}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">担当エリア</Label>
-              <Input value={project?.area || "—"} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={project?.area || ""}
+                onChange={() => {}}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">担当営業</Label>
-              <Input value={project?.salesRep || "—"} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={project?.salesRep || ""}
+                onChange={() => {}}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">エリアMGR</Label>
-              <Input value="濱元佑樹" readOnly disabled className="bg-gray-50" />
+              <Input
+                value="濱元佑樹"
+                onChange={() => {}}
+                className="bg-white"
+              />
             </div>
           </div>
 
           <div className="mb-6">
             <Label className="text-sm text-muted-foreground">住所</Label>
-            <Input value={project?.location || "—"} readOnly disabled className="bg-gray-50 mt-1.5" />
+            <Input
+              value={project?.location || ""}
+              onChange={() => {}}
+              className="bg-white mt-1.5"
+            />
           </div>
 
           <Separator className="my-6" />
@@ -229,37 +316,73 @@ export function RecordDetail({ record, project, onBack }: RecordDetailProps) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">掲載開始希望日</Label>
-              <Input value={record.publicationStartDate} readOnly disabled className="bg-gray-50" />
+              <Input
+                type="date"
+                value={editData.publicationStartDate}
+                onChange={(e) => updateField("publicationStartDate", e.target.value)}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">掲載終了日</Label>
-              <Input value={record.publicationEndDate} readOnly disabled className="bg-gray-50" />
+              <Input
+                type="date"
+                value={editData.publicationEndDate}
+                onChange={(e) => updateField("publicationEndDate", e.target.value)}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">掲載日数</Label>
-              <Input value={`${record.publicationDays}日間`} readOnly disabled className="bg-gray-50" />
+              <Input
+                type="number"
+                min={1}
+                value={editData.publicationDays}
+                onChange={(e) => updateField("publicationDays", Number(e.target.value))}
+                className="bg-white"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">実NET額</Label>
-              <Input value={`¥${record.netAmount.toLocaleString()}`} readOnly disabled className="bg-gray-50" />
+              <Input
+                type="number"
+                min={0}
+                value={editData.netAmount}
+                onChange={(e) => updateField("netAmount", Number(e.target.value))}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">日予算</Label>
-              <Input value={`¥${record.dailyBudget.toLocaleString()}`} readOnly disabled className="bg-gray-50" />
+              <Input
+                type="number"
+                min={0}
+                value={editData.dailyBudget}
+                onChange={(e) => updateField("dailyBudget", Number(e.target.value))}
+                className="bg-white"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">配信エリア</Label>
-              <Input value={record.deliveryArea} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={editData.deliveryArea}
+                onChange={(e) => updateField("deliveryArea", e.target.value)}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">ターゲット</Label>
-              <Input value={record.target} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={editData.target}
+                onChange={(e) => updateField("target", e.target.value)}
+                className="bg-white"
+              />
             </div>
           </div>
 
@@ -270,11 +393,37 @@ export function RecordDetail({ record, project, onBack }: RecordDetailProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">商材区分</Label>
-              <Input value={record.materialCategory} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={editData.materialCategory}
+                onChange={(e) => updateField("materialCategory", e.target.value)}
+                className="bg-white"
+              />
             </div>
             <div className="space-y-1.5">
               <Label className="text-sm text-muted-foreground">商材名</Label>
-              <Input value={record.materialName} readOnly disabled className="bg-gray-50" />
+              <Input
+                value={editData.materialName}
+                onChange={(e) => updateField("materialName", e.target.value)}
+                className="bg-white"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">キャンペーン目的</Label>
+              <Input
+                value={editData.campaignObjective}
+                onChange={(e) => updateField("campaignObjective", e.target.value)}
+                className="bg-white"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm text-muted-foreground">課金方式</Label>
+              <Input
+                value={editData.billingMethod}
+                onChange={(e) => updateField("billingMethod", e.target.value)}
+                className="bg-white"
+              />
             </div>
           </div>
         </div>
@@ -287,6 +436,7 @@ export function RecordDetail({ record, project, onBack }: RecordDetailProps) {
           embedded
           renderChatPanel
           materialName={`${record.storeName} - ${record.materialName}`}
+          twoStepMode
         />
       </main>
 

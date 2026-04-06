@@ -1,16 +1,17 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx next:*)",
-      "Bash(bun run:*)",
-      "Bash(./node_modules/.bin/next build:*)",
-      "Bash(ls:*)",
-      "Bash(bun install:*)",
-      "Bash(npx tsc:*)",
-      "Bash(find /Users/nishikawakazuhiro/WhiteHatAI/オーガイ/line/components -maxdepth 3 -type f -name *.tsx)",
-      "Bash(npm install:*)",
-      "Bash(git checkout:*)",
-      "Bash(NEXT_TURBOPACK=0 npx next build)"
+      "Bash",
+      "Read",
+      "Write",
+      "Edit",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "Skill",
+      "mcp__plugin_figma_figma__*"
     ]
   }
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Stepper } from "@/components/workflow/stepper"
+import { Stepper, twoStepConfig } from "@/components/workflow/stepper"
 import { Step1Sales } from "@/components/workflow/steps/step1-sales"
 import { Step1Office } from "@/components/workflow/steps/step1-office"
 import { Step2Sales } from "@/components/workflow/steps/step2-sales"
@@ -20,6 +20,7 @@ interface WorkflowContainerProps {
   materialUsageMethod?: string
   materialSelectedPackId?: string
   materialSelectedPackTitle?: string
+  twoStepMode?: boolean
 }
 
 const initialBasicInfo: BasicInfo = {
@@ -59,7 +60,7 @@ const initialState: WorkflowState = {
   finalReport: undefined,
 }
 
-export function WorkflowContainer({ role, embedded = false, onStatusChange, renderChatPanel = false, materialName, materialUsageMethod, materialSelectedPackId, materialSelectedPackTitle }: WorkflowContainerProps) {
+export function WorkflowContainer({ role, embedded = false, onStatusChange, renderChatPanel = false, materialName, materialUsageMethod, materialSelectedPackId, materialSelectedPackTitle, twoStepMode = false }: WorkflowContainerProps) {
   const [state, setState] = useState<WorkflowState>(initialState)
 
   const isPublicationPeriod = (() => {
@@ -76,7 +77,7 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
   if (state.step1Status === "approved") {
     completedSteps.push(1)
   }
-  if (state.step2Status === "success") {
+  if (!twoStepMode && state.step2Status === "success") {
     completedSteps.push(2)
   }
 
@@ -336,13 +337,16 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
     }))
   }
 
+  // 2ステップモード: 内部step2を配信レポート(旧step3)として扱う
+  const renderStep = twoStepMode && state.currentStep === 2 ? 3 : state.currentStep
+
   const workflowContent = (
     <>
-      <Stepper currentStep={state.currentStep} completedSteps={completedSteps} onStepClick={handleStepClick} />
+      <Stepper currentStep={state.currentStep} completedSteps={completedSteps} onStepClick={handleStepClick} steps={twoStepMode ? twoStepConfig : undefined} />
 
       <div className={embedded ? "" : "mx-auto max-w-3xl"}>
         {/* Step 1 */}
-        {state.currentStep === 1 && role === "sales" && (
+        {renderStep === 1 && role === "sales" && (
           <Step1Sales
             status={state.step1Status}
             rejectionReason={state.step1RejectionReason}
@@ -363,7 +367,7 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
           />
         )}
 
-        {state.currentStep === 1 && role === "office" && (
+        {renderStep === 1 && role === "office" && (
           <Step1Office
             status={state.step1Status}
             basicInfo={state.basicInfo}
@@ -374,8 +378,8 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
           />
         )}
 
-        {/* Step 2 */}
-        {state.currentStep === 2 && role === "sales" && (
+        {/* Step 2 (3ステップモードのみ) */}
+        {renderStep === 2 && role === "sales" && (
           <Step2Sales
             status={state.step2Status}
             confirmationMessage={state.step2ConfirmationMessage}
@@ -386,7 +390,7 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
           />
         )}
 
-        {state.currentStep === 2 && role === "office" && (
+        {renderStep === 2 && role === "office" && (
           <Step2Office
             status={state.step2Status}
             salesReply={state.step2SalesReply}
@@ -401,17 +405,18 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
           />
         )}
 
-        {/* Step 3 */}
-        {state.currentStep === 3 && role === "sales" && (
+        {/* Step 3 (配信レポート作成) */}
+        {renderStep === 3 && role === "sales" && (
           <Step3Sales
             intermediateReports={state.intermediateReports}
             finalReport={state.finalReport}
             onSendIntermediateReport={handleSendIntermediateReport}
             onSendFinalReport={handleSendFinalReport}
+            finalReportOnly={twoStepMode}
           />
         )}
 
-        {state.currentStep === 3 && role === "office" && (
+        {renderStep === 3 && role === "office" && (
           <Step3Office
             intermediateReports={state.intermediateReports}
             finalReport={state.finalReport}
@@ -423,6 +428,7 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
             onLoadSampleIntermediateReport={handleLoadSampleIntermediateReport}
             onLoadSampleFinalReport={handleLoadSampleFinalReport}
             isPublicationPeriod={isPublicationPeriod}
+            finalReportOnly={twoStepMode}
           />
         )}
       </div>

@@ -23,6 +23,7 @@ interface Step3OfficeProps {
   onLoadSampleIntermediateReport: (reportId: string, fileName: string) => void
   onLoadSampleFinalReport: (fileName: string) => void
   isPublicationPeriod?: boolean
+  finalReportOnly?: boolean
 }
 
 export function Step3Office({
@@ -36,6 +37,7 @@ export function Step3Office({
   onLoadSampleIntermediateReport,
   onLoadSampleFinalReport,
   isPublicationPeriod = false,
+  finalReportOnly = false,
 }: Step3OfficeProps) {
   const [uploadedFiles, setUploadedFiles] = useState<Record<string, string>>({})
   const [savedFiles, setSavedFiles] = useState<Record<string, boolean>>({})
@@ -89,8 +91,8 @@ export function Step3Office({
 
   return (
     <div className="space-y-6">
-      {/* 中間報告 */}
-      {intermediateReports.map((report, index) => (
+      {/* 中間報告（finalReportOnlyの場合は非表示） */}
+      {!finalReportOnly && intermediateReports.map((report, index) => (
         <Card key={report.id}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
@@ -132,13 +134,15 @@ export function Step3Office({
         </Card>
       ))}
 
-      {/* 中間報告を追加ボタン */}
-      <div className="flex justify-center">
-        <Button variant="outline" onClick={onAddIntermediateReport}>
-          <Plus className="mr-2 h-4 w-4" />
-          中間報告を追加
-        </Button>
-      </div>
+      {/* 中間報告を追加ボタン（finalReportOnlyの場合は非表示） */}
+      {!finalReportOnly && (
+        <div className="flex justify-center">
+          <Button variant="outline" onClick={onAddIntermediateReport}>
+            <Plus className="mr-2 h-4 w-4" />
+            中間報告を追加
+          </Button>
+        </div>
+      )}
 
       {/* 最終報告 */}
       <Card>
