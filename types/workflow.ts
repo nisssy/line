@@ -103,6 +103,9 @@ export interface SavedSearchCondition {
     department?: string
     area?: string
     departmentArea?: string
+    prefectures?: string[]
+    areas?: string[]
+    departments?: string[]
     materialCategory?: string
     materialName?: string
     statuses?: string[]

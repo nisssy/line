@@ -193,7 +193,10 @@ export default function Home() {
         onAddMaterial={handleOpenAddMaterial}
         projects={projects}
         records={records}
-        onDuplicateRecords={(newRecords, projectId) => {
+        onDuplicateRecords={(newRecords, projectId, newProject) => {
+          if (newProject) {
+            setProjects(prev => [newProject, ...prev])
+          }
           setRecords(prev => [...newRecords, ...prev])
           setSelectedProjectId(projectId)
           setViewMode("detail")

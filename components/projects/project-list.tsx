@@ -15,7 +15,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Checkbox } from "@/components/ui/checkbox"
 import { cn } from "@/lib/utils"
-import { initialCompanies, initialHalls, initialEmployees, searchCompanies, searchHalls, DEPARTMENT_OPTIONS, AREA_OPTIONS, MATERIAL_CATEGORY_OPTIONS } from "@/lib/master-data"
+import { initialCompanies, initialHalls, initialEmployees, searchCompanies, searchHalls, DEPARTMENT_OPTIONS, AREA_OPTIONS, MATERIAL_CATEGORY_OPTIONS, PREFECTURE_OPTIONS } from "@/lib/master-data"
 import {
   Dialog,
   DialogContent,
@@ -31,7 +31,7 @@ interface ProjectListProps {
   onAddMaterial: () => void
   projects: Project[]
   records: RecordData[]
-  onDuplicateRecords?: (records: RecordData[], projectId: string) => void
+  onDuplicateRecords?: (records: RecordData[], projectId: string, newProject?: Project) => void
 }
 
 // サンプルデータ（マスタデータ整合）
@@ -310,9 +310,15 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
   const [hallOpen, setHallOpen] = useState(false)
   const [companyQuery, setCompanyQuery] = useState("")
   const [hallQuery, setHallQuery] = useState("")
-  const [filterDepartmentArea, setFilterDepartmentArea] = useState("")
-  const [departmentAreaOpen, setDepartmentAreaOpen] = useState(false)
-  const [departmentAreaQuery, setDepartmentAreaQuery] = useState("")
+  const [filterPrefectures, setFilterPrefectures] = useState<string[]>([])
+  const [prefectureOpen, setPrefectureOpen] = useState(false)
+  const [prefectureQuery, setPrefectureQuery] = useState("")
+  const [filterAreas, setFilterAreas] = useState<string[]>([])
+  const [areaOpen, setAreaOpen] = useState(false)
+  const [areaQuery, setAreaQuery] = useState("")
+  const [filterDepartments, setFilterDepartments] = useState<string[]>([])
+  const [departmentOpen, setDepartmentOpen] = useState(false)
+  const [departmentQuery, setDepartmentQuery] = useState("")
   const [filterStatuses, setFilterStatuses] = useState<string[]>([])
   const [filterMaterialCategory, setFilterMaterialCategory] = useState("")
   const [materialCategoryOpen, setMaterialCategoryOpen] = useState(false)
@@ -345,6 +351,7 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
   const [duplicateModalOpen, setDuplicateModalOpen] = useState(false)
   const [duplicateProjectId, setDuplicateProjectId] = useState<string | null>(null)
   const [selectedRecordsForDuplicate, setSelectedRecordsForDuplicate] = useState<string[]>([])
+  const [duplicateMode, setDuplicateMode] = useState<"same" | "new">("same")
   const duplicateProjectRecords = duplicateProjectId ? records.filter(r => r.projectId === duplicateProjectId) : []
 
   const filteredCompanies = useMemo(
@@ -356,11 +363,18 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
     [hallQuery, filterCompany?.id]
   )
 
-  const DEPARTMENT_AREA_OPTIONS = useMemo(() => [...DEPARTMENT_OPTIONS, ...AREA_OPTIONS], [])
-  const filteredDepartmentAreas = useMemo(() => {
-    if (!departmentAreaQuery) return DEPARTMENT_AREA_OPTIONS
-    return DEPARTMENT_AREA_OPTIONS.filter(n => n.includes(departmentAreaQuery))
-  }, [departmentAreaQuery, DEPARTMENT_AREA_OPTIONS])
+  const filteredPrefectures = useMemo(() => {
+    if (!prefectureQuery) return PREFECTURE_OPTIONS
+    return PREFECTURE_OPTIONS.filter(n => n.includes(prefectureQuery))
+  }, [prefectureQuery])
+  const filteredAreas = useMemo(() => {
+    if (!areaQuery) return AREA_OPTIONS
+    return AREA_OPTIONS.filter(n => n.includes(areaQuery))
+  }, [areaQuery])
+  const filteredDepartments = useMemo(() => {
+    if (!departmentQuery) return DEPARTMENT_OPTIONS
+    return DEPARTMENT_OPTIONS.filter(n => n.includes(departmentQuery))
+  }, [departmentQuery])
 
   const filteredSalesReps = useMemo(() => {
     if (!salesRepQuery) return initialEmployees
@@ -380,12 +394,15 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
   const filteredRecords = useMemo(() => {
     return records.filter((record) => {
       const project = projects.find(p => p.id === record.projectId)
-      if (filterDepartmentArea) {
-        if (project) {
-          const isDept = DEPARTMENT_OPTIONS.includes(filterDepartmentArea)
-          if (isDept && project.department !== filterDepartmentArea) return false
-          if (!isDept && project.area !== filterDepartmentArea) return false
-        }
+      if (filterDepartments.length > 0) {
+        if (!project || !project.department || !filterDepartments.includes(project.department)) return false
+      }
+      if (filterAreas.length > 0) {
+        if (!project || !project.area || !filterAreas.includes(project.area)) return false
+      }
+      if (filterPrefectures.length > 0) {
+        const hall = project ? initialHalls.find(h => h.hallId === project.hallId) : undefined
+        if (!hall || !hall.prefecture || !filterPrefectures.includes(hall.prefecture)) return false
       }
       if (filterStatuses.length > 0 && !filterStatuses.includes(record.status)) return false
       if (filterMaterialCategory && record.materialCategory !== filterMaterialCategory) return false
@@ -409,7 +426,7 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
       }
       return true
     })
-  }, [records, projects, filterDepartmentArea, filterStatuses, filterMaterialCategory, filterMaterialName, filterProjectCode, filterProjectNumber, filterRecordNumber, filterProjectName, filterSalesRep, filterCompany, filterHall])
+  }, [records, projects, filterPrefectures, filterAreas, filterDepartments, filterStatuses, filterMaterialCategory, filterMaterialName, filterProjectCode, filterProjectNumber, filterRecordNumber, filterProjectName, filterSalesRep, filterCompany, filterHall])
 
   const toggleStatus = (status: string) => {
     setFilterStatuses(prev =>
@@ -437,7 +454,9 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
     const filters: { key: string; label: string; value: string }[] = []
     if (filterCompany) filters.push({ key: "company", label: "法人", value: filterCompany.name })
     if (filterHall) filters.push({ key: "hall", label: "ホール", value: filterHall.name })
-    if (filterDepartmentArea) filters.push({ key: "departmentArea", label: "部やエリア", value: filterDepartmentArea })
+    if (filterPrefectures.length > 0) filters.push({ key: "prefectures", label: "都道府県", value: filterPrefectures.join(", ") })
+    if (filterAreas.length > 0) filters.push({ key: "areas", label: "担当エリア", value: filterAreas.join(", ") })
+    if (filterDepartments.length > 0) filters.push({ key: "departments", label: "部署", value: filterDepartments.join(", ") })
     if (filterStatuses.length > 0) filters.push({ key: "statuses", label: "ステータス", value: filterStatuses.map(s => statusOptions.find(o => o.value === s)?.label || s).join(", ") })
     if (filterMaterialCategory) filters.push({ key: "materialCategory", label: "商材区分", value: filterMaterialCategory })
     if (filterMaterialName) filters.push({ key: "materialName", label: "商材名", value: filterMaterialName })
@@ -447,13 +466,15 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
     if (filterRecordNumber) filters.push({ key: "recordNumber", label: "レコード番号", value: filterRecordNumber })
     if (filterProjectName) filters.push({ key: "projectName", label: "案件名", value: filterProjectName })
     return filters
-  }, [filterCompany, filterHall, filterDepartmentArea, filterStatuses, filterMaterialCategory, filterMaterialName, filterSalesRep, filterProjectCode, filterProjectNumber, filterRecordNumber, filterProjectName])
+  }, [filterCompany, filterHall, filterPrefectures, filterAreas, filterDepartments, filterStatuses, filterMaterialCategory, filterMaterialName, filterSalesRep, filterProjectCode, filterProjectNumber, filterRecordNumber, filterProjectName])
 
   const removeFilter = (key: string) => {
     switch (key) {
       case "company": setFilterCompany(null); break
       case "hall": setFilterHall(null); break
-      case "departmentArea": setFilterDepartmentArea(""); break
+      case "prefectures": setFilterPrefectures([]); break
+      case "areas": setFilterAreas([]); break
+      case "departments": setFilterDepartments([]); break
       case "statuses": setFilterStatuses([]); break
       case "materialCategory": setFilterMaterialCategory(""); break
       case "materialName": setFilterMaterialName(""); break
@@ -473,7 +494,9 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
       conditions: {
         company: filterCompany ? JSON.stringify({ id: filterCompany.id, companyId: filterCompany.companyId, name: filterCompany.name }) : undefined,
         hall: filterHall ? JSON.stringify({ id: filterHall.id, hallId: filterHall.hallId, name: filterHall.name, salesPersonName: filterHall.salesPersonName, companyId: filterHall.companyId, discountAmount: filterHall.discountAmount }) : undefined,
-        departmentArea: filterDepartmentArea || undefined,
+        prefectures: filterPrefectures.length > 0 ? filterPrefectures : undefined,
+        areas: filterAreas.length > 0 ? filterAreas : undefined,
+        departments: filterDepartments.length > 0 ? filterDepartments : undefined,
         materialCategory: filterMaterialCategory || undefined,
         materialName: filterMaterialName || undefined,
         statuses: filterStatuses.length > 0 ? filterStatuses : undefined,
@@ -506,7 +529,9 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
     if (c.hall) {
       try { setFilterHall(JSON.parse(c.hall)) } catch { setFilterHall(null) }
     } else { setFilterHall(null) }
-    setFilterDepartmentArea(c.departmentArea || c.department || c.area || "")
+    setFilterPrefectures(c.prefectures || [])
+    setFilterAreas(c.areas || (c.area ? [c.area] : []))
+    setFilterDepartments(c.departments || (c.department ? [c.department] : []))
     setFilterMaterialCategory(c.materialCategory || "")
     setFilterMaterialName(c.materialName || "")
     setFilterStatuses(c.statuses || [])
@@ -533,7 +558,9 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
             conditions: {
               company: filterCompany ? JSON.stringify({ id: filterCompany.id, companyId: filterCompany.companyId, name: filterCompany.name }) : undefined,
               hall: filterHall ? JSON.stringify({ id: filterHall.id, hallId: filterHall.hallId, name: filterHall.name, salesPersonName: filterHall.salesPersonName, companyId: filterHall.companyId, discountAmount: filterHall.discountAmount }) : undefined,
-              departmentArea: filterDepartmentArea || undefined,
+              prefectures: filterPrefectures.length > 0 ? filterPrefectures : undefined,
+              areas: filterAreas.length > 0 ? filterAreas : undefined,
+              departments: filterDepartments.length > 0 ? filterDepartments : undefined,
               materialCategory: filterMaterialCategory || undefined,
               materialName: filterMaterialName || undefined,
               statuses: filterStatuses.length > 0 ? filterStatuses : undefined,
@@ -567,6 +594,7 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
     e.stopPropagation()
     setDuplicateProjectId(record.projectId)
     setSelectedRecordsForDuplicate([record.id])
+    setDuplicateMode("same")
     setDuplicateModalOpen(true)
   }
 
@@ -580,21 +608,47 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
 
   const handleDuplicate = () => {
     if (!onDuplicateRecords || selectedRecordsForDuplicate.length === 0 || !duplicateProjectId) return
+    const sourceProject = projects.find(p => p.id === duplicateProjectId)
+
+    let targetProjectId = duplicateProjectId
+    let targetProjectNumber = sourceProject?.code || ""
+    let newProject: Project | undefined = undefined
+
+    if (duplicateMode === "new" && sourceProject) {
+      const newId = `p-dup-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
+      const newCode = `${sourceProject.code}-COPY-${Math.floor(Math.random() * 1000)}`
+      newProject = {
+        ...sourceProject,
+        id: newId,
+        code: newCode,
+        name: `${sourceProject.name}（複製）`,
+        status: "preparing",
+        detailStatus: "proposing",
+        materialCount: selectedRecordsForDuplicate.length,
+        createdAt: new Date().toISOString().split("T")[0],
+      }
+      targetProjectId = newId
+      targetProjectNumber = newCode
+    }
+
     const recordsToDuplicate = records
       .filter(r => selectedRecordsForDuplicate.includes(r.id))
-      .map(r => ({
+      .map((r, idx) => ({
         ...r,
-        id: `r-dup-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
-        recordNumber: String(13800 + records.length + Math.floor(Math.random() * 100)),
-        recordTitle: `レコードNo.${13800 + records.length}…`,
+        id: `r-dup-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+        recordNumber: String(13800 + records.length + idx + Math.floor(Math.random() * 100)),
+        recordTitle: `レコードNo.${13800 + records.length + idx}…`,
+        projectId: targetProjectId,
+        projectNumber: targetProjectNumber,
         status: "pre_proposal" as const,
         statusLabel: "提案前",
         orderDate: "",
       }))
-    onDuplicateRecords(recordsToDuplicate, duplicateProjectId)
+    onDuplicateRecords(recordsToDuplicate, targetProjectId, newProject)
     setDuplicateModalOpen(false)
     setDuplicateProjectId(null)
     setSelectedRecordsForDuplicate([])
+    setDuplicateMode("same")
   }
 
   const handleExportRecords = () => {
@@ -807,37 +861,137 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
                     </Popover>
                   </div>
 
-                  {/* 部やエリア */}
+                  {/* 都道府県 */}
                   <div className="space-y-2">
-                    <Label className="text-sm font-bold">部やエリア</Label>
-                    <Popover open={departmentAreaOpen} onOpenChange={setDepartmentAreaOpen}>
+                    <Label className="text-sm font-bold">都道府県</Label>
+                    <Popover open={prefectureOpen} onOpenChange={setPrefectureOpen}>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
                           role="combobox"
-                          className={cn("w-full justify-between font-normal", !filterDepartmentArea && "text-muted-foreground")}
+                          className={cn("w-full justify-between font-normal", filterPrefectures.length === 0 && "text-muted-foreground")}
                         >
-                          {filterDepartmentArea || "エリアを選択..."}
+                          <span className="truncate">
+                            {filterPrefectures.length === 0
+                              ? "都道府県を検索..."
+                              : filterPrefectures.length <= 2
+                                ? filterPrefectures.join(", ")
+                                : `${filterPrefectures.slice(0, 2).join(", ")} 他${filterPrefectures.length - 2}件`}
+                          </span>
                           <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-[280px] p-0" align="start">
                         <Command shouldFilter={false}>
-                          <CommandInput placeholder="部・エリアで検索..." value={departmentAreaQuery} onValueChange={setDepartmentAreaQuery} />
+                          <CommandInput placeholder="都道府県で検索..." value={prefectureQuery} onValueChange={setPrefectureQuery} />
                           <CommandList>
-                            <CommandEmpty>該当する部・エリアが見つかりません</CommandEmpty>
+                            <CommandEmpty>該当する都道府県が見つかりません</CommandEmpty>
                             <CommandGroup>
-                              {filteredDepartmentAreas.map((item) => (
+                              {filteredPrefectures.map((item) => (
                                 <CommandItem
                                   key={item}
                                   value={item}
                                   onSelect={() => {
-                                    setFilterDepartmentArea(filterDepartmentArea === item ? "" : item)
-                                    setDepartmentAreaQuery("")
-                                    setDepartmentAreaOpen(false)
+                                    setFilterPrefectures(prev =>
+                                      prev.includes(item) ? prev.filter(p => p !== item) : [...prev, item]
+                                    )
                                   }}
                                 >
-                                  <Check className={cn("mr-2 h-4 w-4", filterDepartmentArea === item ? "opacity-100" : "opacity-0")} />
+                                  <Check className={cn("mr-2 h-4 w-4", filterPrefectures.includes(item) ? "opacity-100" : "opacity-0")} />
+                                  <span className="text-sm">{item}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* 担当エリア */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold">担当エリア</Label>
+                    <Popover open={areaOpen} onOpenChange={setAreaOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn("w-full justify-between font-normal", filterAreas.length === 0 && "text-muted-foreground")}
+                        >
+                          <span className="truncate">
+                            {filterAreas.length === 0
+                              ? "担当エリアを検索..."
+                              : filterAreas.length <= 2
+                                ? filterAreas.join(", ")
+                                : `${filterAreas.slice(0, 2).join(", ")} 他${filterAreas.length - 2}件`}
+                          </span>
+                          <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[280px] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput placeholder="担当エリアで検索..." value={areaQuery} onValueChange={setAreaQuery} />
+                          <CommandList>
+                            <CommandEmpty>該当する担当エリアが見つかりません</CommandEmpty>
+                            <CommandGroup>
+                              {filteredAreas.map((item) => (
+                                <CommandItem
+                                  key={item}
+                                  value={item}
+                                  onSelect={() => {
+                                    setFilterAreas(prev =>
+                                      prev.includes(item) ? prev.filter(p => p !== item) : [...prev, item]
+                                    )
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", filterAreas.includes(item) ? "opacity-100" : "opacity-0")} />
+                                  <span className="text-sm">{item}</span>
+                                </CommandItem>
+                              ))}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* 部署 */}
+                  <div className="space-y-2">
+                    <Label className="text-sm font-bold">部署</Label>
+                    <Popover open={departmentOpen} onOpenChange={setDepartmentOpen}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          role="combobox"
+                          className={cn("w-full justify-between font-normal", filterDepartments.length === 0 && "text-muted-foreground")}
+                        >
+                          <span className="truncate">
+                            {filterDepartments.length === 0
+                              ? "部署を検索..."
+                              : filterDepartments.length <= 2
+                                ? filterDepartments.join(", ")
+                                : `${filterDepartments.slice(0, 2).join(", ")} 他${filterDepartments.length - 2}件`}
+                          </span>
+                          <ChevronsUpDown className="ml-1 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[280px] p-0" align="start">
+                        <Command shouldFilter={false}>
+                          <CommandInput placeholder="部署で検索..." value={departmentQuery} onValueChange={setDepartmentQuery} />
+                          <CommandList>
+                            <CommandEmpty>該当する部署が見つかりません</CommandEmpty>
+                            <CommandGroup>
+                              {filteredDepartments.filter(d => ["営業部", "管理部", "経理部", "企画部"].includes(d)).map((item) => (
+                                <CommandItem
+                                  key={item}
+                                  value={item}
+                                  onSelect={() => {
+                                    setFilterDepartments(prev =>
+                                      prev.includes(item) ? prev.filter(p => p !== item) : [...prev, item]
+                                    )
+                                  }}
+                                >
+                                  <Check className={cn("mr-2 h-4 w-4", filterDepartments.includes(item) ? "opacity-100" : "opacity-0")} />
                                   <span className="text-sm">{item}</span>
                                 </CommandItem>
                               ))}
@@ -1273,6 +1427,30 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
             <DialogTitle>レコードを複製</DialogTitle>
           </DialogHeader>
           <div className="py-4">
+            <div className="mb-4 rounded-lg border p-3 space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="radio"
+                  name="duplicate-mode"
+                  value="same"
+                  checked={duplicateMode === "same"}
+                  onChange={() => setDuplicateMode("same")}
+                  className="h-4 w-4"
+                />
+                <span>同案件に追加</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer text-sm">
+                <input
+                  type="radio"
+                  name="duplicate-mode"
+                  value="new"
+                  checked={duplicateMode === "new"}
+                  onChange={() => setDuplicateMode("new")}
+                  className="h-4 w-4"
+                />
+                <span>新案件として追加</span>
+              </label>
+            </div>
             <p className="text-sm text-muted-foreground mb-4">
               この案件に含まれるレコードから、複製するものを選択してください。
             </p>
