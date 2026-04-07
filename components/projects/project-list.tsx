@@ -631,19 +631,23 @@ export function ProjectList({ onSelectProject, onSelectRecord, onCreateProject, 
       targetProjectNumber = newCode
     }
 
-    const recordsToDuplicate = records
+    const recordsToDuplicate: RecordData[] = records
       .filter(r => selectedRecordsForDuplicate.includes(r.id))
-      .map((r, idx) => ({
-        ...r,
-        id: `r-dup-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
-        recordNumber: String(13800 + records.length + idx + Math.floor(Math.random() * 100)),
-        recordTitle: `レコードNo.${13800 + records.length + idx}…`,
-        projectId: targetProjectId,
-        projectNumber: targetProjectNumber,
-        status: "pre_proposal" as const,
-        statusLabel: "提案前",
-        orderDate: "",
-      }))
+      .map((r, idx) => {
+        const dup: RecordData = {
+          ...r,
+          id: `r-dup-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 7)}`,
+          recordNumber: String(13800 + records.length + idx + Math.floor(Math.random() * 100)),
+          recordTitle: `レコードNo.${13800 + records.length + idx}…`,
+          projectId: targetProjectId,
+          projectNumber: targetProjectNumber,
+          orderDate: "",
+        }
+        // ステータスを必ず「提案前」に初期化
+        dup.status = "pre_proposal"
+        dup.statusLabel = "提案前"
+        return dup
+      })
     onDuplicateRecords(recordsToDuplicate, targetProjectId, newProject)
     setDuplicateModalOpen(false)
     setDuplicateProjectId(null)

@@ -328,6 +328,7 @@ export function ProjectDetail({
                           >
                             <td className="px-3 py-2.5">
                               <div className={`h-2.5 w-2.5 rounded-sm ${
+                                record.status === "pre_proposal" ? "bg-orange-500" :
                                 record.status === "office_applying" ? "bg-blue-500" :
                                 record.status === "office_approved" ? "bg-teal-500" :
                                 record.status === "agency_pending" ? "bg-yellow-500" :
