@@ -437,6 +437,8 @@ export function RecordDetail({ record, project, onBack, onRecordUpdate }: Record
           renderChatPanel
           materialName={`${record.storeName} - ${record.materialName}`}
           twoStepMode
+          currentStep={currentStep}
+          onCurrentStepChange={setCurrentStep}
         />
       </main>
 

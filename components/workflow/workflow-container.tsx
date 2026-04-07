@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Stepper, twoStepConfig } from "@/components/workflow/stepper"
 import { Step1Sales } from "@/components/workflow/steps/step1-sales"
 import { Step1Office } from "@/components/workflow/steps/step1-office"
@@ -21,6 +21,8 @@ interface WorkflowContainerProps {
   materialSelectedPackId?: string
   materialSelectedPackTitle?: string
   twoStepMode?: boolean
+  currentStep?: WorkflowStep
+  onCurrentStepChange?: (step: WorkflowStep) => void
 }
 
 const initialBasicInfo: BasicInfo = {
@@ -60,8 +62,16 @@ const initialState: WorkflowState = {
   finalReport: undefined,
 }
 
-export function WorkflowContainer({ role, embedded = false, onStatusChange, renderChatPanel = false, materialName, materialUsageMethod, materialSelectedPackId, materialSelectedPackTitle, twoStepMode = false }: WorkflowContainerProps) {
+export function WorkflowContainer({ role, embedded = false, onStatusChange, renderChatPanel = false, materialName, materialUsageMethod, materialSelectedPackId, materialSelectedPackTitle, twoStepMode = false, currentStep: controlledStep, onCurrentStepChange }: WorkflowContainerProps) {
   const [state, setState] = useState<WorkflowState>(initialState)
+
+  // 外部から currentStep が指定された場合、内部 state と同期
+  useEffect(() => {
+    if (controlledStep !== undefined && controlledStep !== state.currentStep) {
+      setState((prev) => ({ ...prev, currentStep: controlledStep }))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [controlledStep])
 
   const isPublicationPeriod = (() => {
     const { startDate, endDate } = state.basicInfo
@@ -315,6 +325,7 @@ export function WorkflowContainer({ role, embedded = false, onStatusChange, rend
 
   const handleStepClick = (step: WorkflowStep) => {
     setState((prev) => ({ ...prev, currentStep: step }))
+    onCurrentStepChange?.(step)
   }
 
   const handleSendIntermediateReport = (reportId: string, content: string) => {
