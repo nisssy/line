@@ -16,7 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { cn } from "@/lib/utils"
-import { Calendar, Check, ChevronsUpDown } from "lucide-react"
+import { Check, ChevronsUpDown } from "lucide-react"
 import { MATERIAL_NAME_OPTIONS } from "@/types/workflow"
 
 // ===== Types =====
@@ -36,6 +36,7 @@ export interface MaterialInfo {
   billingAmount: string
   isOpen: boolean
   isConfirmed: boolean
+  date?: string
 }
 
 export function createDefaultMaterial(id: string): MaterialInfo {
@@ -48,6 +49,7 @@ export function createDefaultMaterial(id: string): MaterialInfo {
     billingAmount: "",
     isOpen: true,
     isConfirmed: false,
+    date: "",
   }
 }
 
@@ -239,6 +241,11 @@ export function MaterialInfoForm({
                 ? "周年パックで実施"
                 : "単発で実施"}
             </Badge>
+            {data.date && (
+              <Badge variant="secondary" className="text-xs font-normal">
+                日付: {data.date}
+              </Badge>
+            )}
           </div>
 
           {data.usageMethod === "anniversary_pack" && selectedPack && (
@@ -246,10 +253,6 @@ export function MaterialInfoForm({
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">使用パック</span>
                 <span className="text-sm font-medium">{selectedPack.title}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">有効期限</span>
-                <span className="text-sm">{selectedPack.expirationDate}</span>
               </div>
               <div className="flex items-center justify-between border-t border-border pt-2">
                 <span className="text-sm text-muted-foreground">ホール請求額</span>
@@ -300,6 +303,19 @@ export function MaterialInfoForm({
           />
         </div>
 
+        {/* 日付（任意） */}
+        <div className="space-y-1.5">
+          <Label className="text-sm text-muted-foreground">
+            日付 <span className="text-xs">(任意)</span>
+          </Label>
+          <Input
+            type="date"
+            value={data.date || ""}
+            onChange={(e) => onChange({ date: e.target.value })}
+            className="bg-white md:w-1/2"
+          />
+        </div>
+
         {/* 利用方法 */}
         {showUsageMethod && (
           <div className="space-y-4">
@@ -337,7 +353,7 @@ export function MaterialInfoForm({
               {/* 周年パック一覧（周年パック選択時のみ表示） */}
               {data.usageMethod === "anniversary_pack" && hasPacks && (
                 <div className="ml-8 my-2 space-y-2">
-                  {sortedPacks.map((pack, idx) => (
+                  {sortedPacks.map((pack) => (
                     <button
                       key={pack.id}
                       type="button"
@@ -352,23 +368,9 @@ export function MaterialInfoForm({
                         <span className="text-sm font-medium">
                           {pack.title}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <Calendar className="h-3 w-3" />
-                            <span>{pack.expirationDate}</span>
-                          </div>
-                          {idx === 0 && (
-                            <Badge
-                              variant="outline"
-                              className="text-[10px] px-1.5 py-0 border-amber-400 text-amber-600"
-                            >
-                              有効期限が近い
-                            </Badge>
-                          )}
-                          {data.selectedPackId === pack.id && (
-                            <Check className="h-4 w-4 text-primary" />
-                          )}
-                        </div>
+                        {data.selectedPackId === pack.id && (
+                          <Check className="h-4 w-4 text-primary" />
+                        )}
                       </div>
                     </button>
                   ))}
